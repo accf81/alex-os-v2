@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IA — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260728b">
+  <style>
+    /* etiqueta "Compartilhado" no item de backlog */
+    .badge-compart { background:rgba(59,130,246,.15); color:#3b82f6; }
+
+    /* ── Relatório semanal ── */
+    .rep-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; padding:14px 18px; border:1px solid transparent; border-radius:var(--radius-lg); background:linear-gradient(180deg,var(--surface2),var(--surface)) padding-box, var(--edge) border-box; box-shadow:var(--shadow-card); }
+    .rep-title { font-family:var(--font-brand); font-size:15px; font-weight:700; }
+    .rep-title span { color:var(--muted); font-weight:500; font-size:12.5px; display:block; margin-top:2px; }
+    .week-pick { display:flex; align-items:center; gap:4px; }
+    .week-pick .wk { padding:7px 14px; border-radius:var(--radius-md); background:var(--bg); border:1px solid var(--border); font-family:var(--font-brand); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .week-pick .nav { width:30px; height:30px; border-radius:var(--radius-md); border:1px solid var(--border); background:var(--bg); color:var(--muted); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .week-pick .nav:hover { color:var(--accent); border-color:var(--accent-line); }
+    .week-pick .nav svg { width:15px; height:15px; stroke:currentColor; fill:none; }
+    .rep-sec-lbl { font-family:var(--font-brand); font-size:12px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); margin:22px 2px 12px; display:flex; align-items:center; gap:8px; }
+    .rep-sec-lbl.done { color:#22c55e; } .rep-sec-lbl.next { color:#3b82f6; }
+    .rep-sec-lbl svg { width:15px; height:15px; stroke:currentColor; fill:none; }
+    .rep-sec-lbl .cnt { color:var(--muted); font-weight:500; letter-spacing:0; text-transform:none; font-size:11px; }
+    .rep-mini { margin-bottom:12px; overflow:hidden; border:1px solid transparent; border-radius:var(--radius-lg); background:linear-gradient(180deg,var(--surface2),var(--surface)) padding-box, var(--edge) border-box; box-shadow:var(--shadow-card); }
+    .rep-mini-hd { display:flex; align-items:center; gap:11px; padding:11px 16px; background:linear-gradient(180deg,var(--surface3),var(--surface2)); }
+    .rep-mini-hd .mt { font-family:var(--font-brand); font-size:13.5px; font-weight:700; flex:1; }
+    .rep-mini-hd .mtag { font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:var(--radius-sm,5px); background:rgba(59,130,246,.12); color:#3b82f6; }
+    .rep-mini-hd .mcount { font-size:11px; color:var(--muted); }
+    .rep-mini-bd { border-top:1px solid var(--border); }
+    .rep-it { display:flex; gap:12px; padding:11px 16px; font-size:13px; }
+    .rep-it + .rep-it { border-top:1px solid var(--border); }
+    .rep-it:nth-child(even) { background:var(--surface2); }
+    .rep-it .idot { width:16px; height:16px; flex-shrink:0; margin-top:2px; }
+    .rep-it.d .idot { color:#22c55e; } .rep-it.n .idot { color:#3b82f6; }
+    .rep-it .idot svg { width:16px; height:16px; stroke:currentColor; fill:none; }
+    .rep-it .itx { flex:1; }
+    .rep-itmeta { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; align-items:center; }
+    .tg { font-size:9.5px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:var(--radius-sm,5px); text-transform:uppercase; white-space:nowrap; }
+    .tg-dev { background:rgba(59,130,246,.12); color:#3b82f6; }
+    .tg-pesq { background:rgba(167,139,250,.15); color:#a78bfa; }
+    .tg-design { background:rgba(236,110,168,.15); color:#ec6ea8; }
+    .tg-op { background:rgba(245,158,11,.12); color:#f59e0b; }
+    .tg-meta { background:var(--surface3); color:var(--muted); text-transform:none; letter-spacing:0; font-weight:600; }
+    .rep-it .idate { font-size:11px; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; margin-top:1px; }
+    .rep-it .prio { font-size:9.5px; font-weight:700; letter-spacing:.05em; padding:2px 7px; border-radius:var(--radius-sm,5px); align-self:flex-start; margin-top:1px; white-space:nowrap; text-transform:uppercase; }
+    .prio.alta { background:rgba(239,68,68,.14); color:#ef4444; }
+    .prio.media { background:rgba(245,158,11,.12); color:#f59e0b; }
+    .prio.baixa { background:var(--surface3); color:var(--muted); }
+    .rep-empty { padding:22px 16px; text-align:center; color:var(--muted); font-size:13px; border:1px dashed var(--border); border-radius:var(--radius-lg); margin-bottom:12px; }
+  </style>
+</head>
+<body>
+<!-- ⚠ 14/08/2026 — ESTA ÁREA MUDOU DE CASA (R-45 / CA-61).
+     O quadro do time, a memória das sessões e a caixa de ideias passaram a
+     morar na ElpIA (Console > Fábrica). Esta tela continua no ar por enquanto,
+     e continua LENDO o que já estava aqui — mas o banco que ela lê deixou de
+     aceitar escrita nova em 14/08 (a trava está em
+     pandora-os/db/migrations/20260814_congela_backlog_do_alex_os.sql).
+     Ninguém deve descobrir a mudança por estranhamento: por isso a tarja.
+     25/08 — o botão apontava para pandora-os.pages.dev, que hoje serve APENAS o
+     aviso de mudança de endereço (medido: título "Este endereço mudou"). Endereço
+     vivo da Fábrica: app.elpia.com.br/fabrica.
+     Estilo embutido de propósito — a tarja não pode depender da folha da área
+     carregar para aparecer. -->
+<div role="status" style="background:#ff6600;color:#231000;font:700 13.5px/1.5 system-ui,-apple-system,sans-serif;padding:11px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  <span>Esta área mudou de lugar. O quadro do time, a memória das sessões e a caixa de ideias agora ficam na <b>ElpIA</b>, em <b>Console &gt; Fábrica</b>. Esta tela continua aqui só para consulta, e o que se escrever nela não é mais gravado.</span>
+  <a href="https://app.elpia.com.br/fabrica" style="margin-left:auto;background:#231000;color:#fff;text-decoration:none;padding:7px 13px;border-radius:8px;white-space:nowrap">Ir para a Fábrica</a>
+</div>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260725a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">IA</span>
+    <div class="sb-topbar-right">
+      <!-- Clock and theme toggle moved to js/sidebar.js -->
+    </div>
+  </div>
+
+  <div class="page">
+    <!-- Filtro de cliente — manda em TODA a área IA (D-2). Montado por JS a partir de Quadro.CLIENTES. -->
+    <div class="ia-filter" id="projSel"></div>
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap">
+      <div class="bl-tabs" id="blTabs">
+        <div class="bl-tab active" data-view="kanban">Kanban</div>
+        <div class="bl-tab" data-view="hist">Histórico</div>
+        <div class="bl-tab" data-view="rel">Relatório semanal</div>
+        <div class="bl-tab" data-view="caixa">Caixa <span id="blCaixaBadge" class="badge badge-orange bl-hidden">0</span></div>
+      </div>
+    </div>
+
+    <div class="bl-toolbar" id="blToolbar">
+      <input id="blSearch" class="bl-search" type="text" placeholder="Buscar no Kanban e no histórico…">
+      <div class="bl-chips" id="blChips" style="margin-bottom:0">
+        <span class="bl-chip active" data-tipo="all">Todas</span>
+        <span class="bl-chip" data-tipo="Dev">Dev</span>
+        <span class="bl-chip" data-tipo="Operacional">Operacional</span>
+        <span class="bl-chip" data-tipo="Dev+Op">Dev+Op</span>
+      </div>
+      <div class="seg" id="blModo"></div>
+    </div>
+
+    <div class="bl-quickadd" id="blQuick">
+      <div style="flex:1">
+        <input id="blQuickText" type="text" placeholder="Nova funcionalidade ou ideia — entra na caixa de entrada">
+        <div id="blQuickErr"></div>
+      </div>
+      <button class="btn btn-primary" id="blQuickBtn">Adicionar</button>
+    </div>
+
+    <div class="bl-view active" id="viewQuadro">
+      <div class="bl-summary" id="blSummary"></div>
+      <div id="blCutuca"></div>
+      <div id="quadroRoot"><div class="loading"><div class="spinner"></div> Carregando…</div></div>
+    </div>
+
+    <div class="bl-view" id="viewHist">
+      <div id="blHistorico"><div class="loading"><div class="spinner"></div> Carregando…</div></div>
+    </div>
+
+    <div class="bl-view" id="viewRel">
+      <div class="rep-bar">
+        <div class="rep-title" id="repTitle">Relatório semanal<span id="repSub"></span></div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div class="week-pick">
+            <div class="nav" id="repPrev" title="Semana anterior"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+            <div class="wk" id="repWk">—</div>
+            <div class="nav" id="repNext" title="Semana seguinte"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="repExport"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exportar HTML</button>
+        </div>
+      </div>
+      <div id="repBody"></div>
+    </div>
+
+    <div class="bl-view" id="viewCaixa">
+      <div class="card bl-inbox">
+        <div class="bl-section-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Caixa de entrada <span id="blInboxCount" class="bl-count"></span></div>
+        <div class="bl-inbox-row">
+          <div style="flex:1">
+            <textarea id="blInboxText" placeholder="Anote uma ideia ou tarefa nova — eu organizo no backlog depois."></textarea>
+            <div id="blInboxErr"></div>
+          </div>
+          <button class="btn btn-primary" id="blInboxAdd">Adicionar</button>
+        </div>
+        <div id="blInboxList" class="bl-inbox-list"></div>
+      </div>
+    </div>
+  </div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script src="js/quadro.js?v=20260728b"></script>
+<script>
+  const TOAST_ICO = {
+    '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+    '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    '🗑️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7a7d82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>'
+  };
+  TOAST_ICO['⚠'] = TOAST_ICO['⚠️']; TOAST_ICO['🗑'] = TOAST_ICO['🗑️'];
+  function toast(msg, dur=3000){
+    const t=document.getElementById('toast');
+    let icon='', text=String(msg==null?'':msg);
+    for(const k in TOAST_ICO){ if(text.indexOf(k)===0){ icon=TOAST_ICO[k]; text=text.slice(k.length).trim(); break; } }
+    t.innerHTML = icon + '<span style="vertical-align:middle">' + text.replace(/</g,'&lt;') + '</span>';
+    t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur);
+  }
+  initSupabase().then(()=>console.log('Supabase conectado')).catch(e=>console.error(e));
+  (function() {
+    const SB_KEY = 'aos_sidebar_collapsed';
+    const sb = document.getElementById('sidebar');
+    function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+    setSidebar(localStorage.getItem(SB_KEY) !== '0');
+    document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+    // clock and theme handlers moved to js/sidebar.js
+  })();
+
+  (function() {
+    let ITENS = [], HIST = [];
+    let tipoFiltro = 'all', queryAtual = '';
+
+    // ── Filtro de cliente: um controle só manda na área IA inteira (D-2) ──────
+    const PROJ_KEY = 'aos_ia_projeto';
+    const CLIENTES = Quadro.CLIENTES;
+    const CHAVES_CLIENTE = CLIENTES.map(c => c.k);
+    function lerProjetoSalvo() {
+      const v = localStorage.getItem(PROJ_KEY);
+      if (v === 'todos' || CHAVES_CLIENTE.includes(v)) return v;
+      return 'todos'; // quem nunca escolheu (ou tinha valor velho) começa vendo tudo
+    }
+    let projAtual = lerProjetoSalvo();
+    // CRITÉRIO ÚNICO de "de quem é este trabalho" — mora no js/quadro.js e vale
+    // para o chip, a contagem do chip, as colunas, os contadores e o relatório.
+    const doProjeto = it => Quadro.pertence(it, projAtual);
+
+    const MODO_KEY = 'aos_ia_modo';
+    let modoAtual = localStorage.getItem(MODO_KEY) === 'lista' ? 'lista' : 'quadro';
+
+    const PRIO_ORDER = ['ALTA','MEDIA','BAIXA','FUTURO'];
+    const PRIO_LABEL = { ALTA:'Alta', MEDIA:'Média', BAIXA:'Baixa', FUTURO:'Futuro' };
+    const aberto = it => it.coluna !== 'publicado';   // "aberto" = tudo que ainda não está no ar
+
+    const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const norm = s => String(s==null?'':s).toLowerCase();
+    const corCliente = k => Quadro.cliente(k).c;
+    const nomeCliente = k => Quadro.cliente(k).n;
+
+    // ── Abas ─────────────────────────────────────────────────────────────────
+    const TAB_KEY = 'aos_ia_tab';
+    // A aba já se chamou "Backlog" e depois "Quadro"; hoje é "Kanban". O nome
+    // gravado no navegador do Alex pode ser qualquer um dos três — todos caem
+    // aqui na aba certa. Sem isso, quem já usou o sistema abriria uma tela em
+    // branco (foi o que quase aconteceu na troca anterior).
+    const ABA_VELHA = { backlog: 'kanban', quadro: 'kanban' };
+    function setView(v) {
+      if (ABA_VELHA[v]) v = ABA_VELHA[v];
+      if (!['kanban','hist','rel','caixa'].includes(v)) v = 'kanban'; // valor estranho não vira tela vazia
+      document.querySelectorAll('.bl-tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+      document.getElementById('viewQuadro').classList.toggle('active', v === 'kanban');
+      document.getElementById('viewHist').classList.toggle('active', v === 'hist');
+      document.getElementById('viewRel').classList.toggle('active', v === 'rel');
+      document.getElementById('viewCaixa').classList.toggle('active', v === 'caixa');
+      const semBusca = (v === 'caixa' || v === 'rel'); // busca e adição rápida não se aplicam
+      document.getElementById('blToolbar').style.display = semBusca ? 'none' : '';
+      document.getElementById('blQuick').style.display = semBusca ? 'none' : 'flex';
+      // chips de tipo e alternador Quadro|Lista só fazem sentido dentro do Kanban
+      document.getElementById('blChips').style.display = (v === 'kanban') ? 'flex' : 'none';
+      document.getElementById('blModo').style.display  = (v === 'kanban') ? 'flex' : 'none';
+      if (v === 'rel') renderRelatorio();
+      localStorage.setItem(TAB_KEY, v);
+    }
+    document.getElementById('blTabs').addEventListener('click', e => {
+      const tab = e.target.closest('.bl-tab'); if (tab) setView(tab.dataset.view);
+    });
+
+    // ── Carregamento ─────────────────────────────────────────────────────────
+    async function loadAll() {
+      try {
+        Quadro.renderCarregando();
+        await initSupabase();
+        const [ri, rh] = await Promise.all([
+          db().from('backlog_itens').select('*').order('ordem'),
+          db().from('backlog_historico').select('*')
+        ]);
+        if (ri.error) throw ri.error;
+        if (rh.error) throw rh.error;
+        ITENS = ri.data || [];
+        HIST  = (rh.data || []).slice().sort((a,b) => {
+          const da = a.data || '', dbb = b.data || '';
+          if (da !== dbb) return dbb.localeCompare(da);
+          return (a.ordem||0) - (b.ordem||0);
+        });
+        renderTudo(); renderHistorico(); renderRelatorio(); loadInbox();
+      } catch (e) {
+        Quadro.renderErro(e.message || e);
+        console.error(e);
+      }
+    }
+
+    // Repinta tudo o que depende dos itens (usado também depois de mover/criar/excluir um cartão).
+    function renderTudo() {
+      renderFiltroCliente();
+      renderSummary();
+      Quadro.renderCutuca(document.getElementById('blCutuca'));
+      Quadro.render();
+    }
+
+    // ── Barra de clientes (contagem = itens abertos) ─────────────────────────
+    function renderFiltroCliente() {
+      const el = document.getElementById('projSel');
+      // A contagem do chip é EXATAMENTE o que aparece ao clicar nele (mesmo critério
+      // das colunas). Um trabalho compartilhado conta nos dois clientes a que pertence,
+      // então a soma dos chips pode passar do "Todos" — é o número honesto de cada filtro.
+      const conta = k => ITENS.filter(it => aberto(it) && Quadro.pertence(it, k)).length;
+      const total = ITENS.filter(aberto).length;
+      let h = '<span class="lbl">Cliente</span>';
+      h += '<div class="cli' + (projAtual==='todos'?' on':'') + '" data-cli="todos"'
+         + (projAtual==='todos'?' style="color:var(--accent)"':'') + '>Todos<b>'+total+'</b></div>';
+      CLIENTES.forEach(c => {
+        const n = conta(c.k), on = projAtual === c.k;
+        h += '<div class="cli'+(on?' on':'')+(n===0?' zero':'')+'" data-cli="'+c.k+'"'
+           + ' title="'+n+' trabalho'+(n===1?'':'s')+' aberto'+(n===1?'':'s')+' neste filtro"'
+           + (on?' style="color:'+c.c+'"':'') + '><i style="background:'+c.c+'"></i>'+esc(c.n)+'<b>'+n+'</b></div>';
+      });
+      el.innerHTML = h;
+    }
+    document.getElementById('projSel').addEventListener('click', e => {
+      const chip = e.target.closest('.cli'); if (chip) setProjeto(chip.dataset.cli);
+    });
+
+    function setProjeto(p) {
+      projAtual = p;
+      localStorage.setItem(PROJ_KEY, p);
+      queryAtual = ''; document.getElementById('blSearch').value = '';
+      renderTudo(); renderHistorico(); renderRelatorio(); loadInbox();
+    }
+
+    // ── Alternador Quadro | Lista ────────────────────────────────────────────
+    function renderModo() {
+      document.getElementById('blModo').innerHTML =
+        '<div class="'+(modoAtual!=='lista'?'on':'')+'" data-modo="quadro">'+Quadro.ICO.quadro+'Quadro</div>' +
+        '<div class="'+(modoAtual==='lista'?'on':'')+'" data-modo="lista">'+Quadro.ICO.lista+'Lista</div>';
+    }
+    document.getElementById('blModo').addEventListener('click', e => {
+      const b = e.target.closest('[data-modo]'); if (!b) return;
+      modoAtual = b.dataset.modo;
+      localStorage.setItem(MODO_KEY, modoAtual);
+      renderModo(); Quadro.render();
+    });
+
+    // ── Contadores do topo ───────────────────────────────────────────────────
+    // Os contadores usam os mesmos grupos da coluna "A fazer": assim a soma deles
+    // é sempre igual ao total de abertos e nenhum item fica de fora da conta
+    // (havia 1 item com prioridade fora do padrão que não entrava em nenhum).
+    function renderSummary() {
+      const el = document.getElementById('blSummary');
+      const abertos = ITENS.filter(it => aberto(it) && doProjeto(it));
+      const cont = g => abertos.filter(it => Quadro.grupoPrio(it) === g).length;
+      const stat = (label, n) => '<div class="bl-stat"><div class="bl-stat-label">'+label+'</div><div class="bl-stat-num">'+n+'</div></div>';
+      let h = stat('Alta',cont('ALTA')) + stat('Média',cont('MEDIA')) + stat('Baixa',cont('BAIXA'))
+            + stat('Futuro',cont('FUTURO')) + stat('Operac.',cont('_OP'));
+      const outros = cont('_OUTROS');
+      if (outros) h += stat('Outros', outros);   // só aparece quando existe alguém aí
+      el.innerHTML = h;
+    }
+
+    // Filtro dos cartões: cliente + tipo + busca. Concluído NÃO sai (vive na coluna Publicado).
+    function passaFiltro(it) {
+      if (!doProjeto(it)) return false;
+      if (tipoFiltro !== 'all' && it.tipo !== tipoFiltro) return false;
+      if (queryAtual) {
+        // campos vazios ficam de fora: senão buscar por "null" traria cartões do nada
+        const alvo = norm([it.item_id, it.titulo, it.descricao, it.area, it.tipo].filter(Boolean).join(' '));
+        if (!alvo.includes(queryAtual)) return false;
+      }
+      return true;
+    }
+
+    // ── Ligação com o js/quadro.js ───────────────────────────────────────────
+    Quadro.init({
+      root: () => document.getElementById('quadroRoot'),
+      getItens: () => ITENS,
+      getEstado: () => ({ projeto: projAtual, tipo: tipoFiltro, busca: queryAtual, modo: modoAtual }),
+      passa: passaFiltro,
+      doProjeto: doProjeto,
+      afterChange: () => { renderFiltroCliente(); renderSummary(); Quadro.renderCutuca(document.getElementById('blCutuca')); Quadro.render(); },
+      adicionarItem: (row) => { if (row) ITENS.push(row); },
+      removerItem: (id) => { const i = ITENS.findIndex(x => String(x.id) === String(id)); if (i >= 0) ITENS.splice(i,1); },
+      irParaQuadro: () => { modoAtual = 'quadro'; localStorage.setItem(MODO_KEY, modoAtual); renderModo(); Quadro.render(); },
+      recarregar: loadAll
+    });
+
+    function monthLabel(key) {
+      const [y,m] = key.split('-');
+      return new Date(parseInt(y), parseInt(m)-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+    }
+
+    // ── Histórico (T-10 — agora entende "Todos") ─────────────────────────────
+    function renderHistorico() {
+      const root = document.getElementById('blHistorico');
+      const visible = HIST.filter(h => projAtual === 'todos' || (h.projeto || 'alexos') === projAtual)
+        .filter(h => !queryAtual || norm(h.sessao+' '+h.conteudo).includes(queryAtual));
+      if (!visible.length) { root.innerHTML = '<div class="bl-inbox-empty">Nenhum registro encontrado.</div>'; return; }
+
+      // Agrupa os registros por SESSÃO (uma sessão tem vários registros, numerados por `ordem`).
+      const ordemSessoes = [], porSessao = {};
+      visible.forEach(h => {
+        const k = h.sessao || '(sem sessão)';
+        if (!porSessao[k]) { porSessao[k] = { sessao: k, data: h.data || '', ts: h.created_at || '', proj: (h.projeto||'alexos'), regs: [] }; ordemSessoes.push(k); }
+        const s = porSessao[k];
+        s.regs.push(h);
+        if ((h.data || '')       > s.data) s.data = h.data;
+        if ((h.created_at || '') > s.ts)   s.ts   = h.created_at;
+      });
+      // Sessão mais recente primeiro (data desc; empate no mesmo dia → created_at desc).
+      const sessoes = ordemSessoes.map(k => porSessao[k]).sort((a, b) =>
+        a.data !== b.data ? b.data.localeCompare(a.data) : (b.ts || '').localeCompare(a.ts || '')
+      );
+      // Dentro de cada sessão, os registros em ordem de leitura (ordem asc).
+      sessoes.forEach(s => s.regs.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
+
+      // Agrupa as sessões por mês (accordion).
+      const meses = [], porMes = {};
+      sessoes.forEach(s => {
+        const key = (s.data || '0000-00').slice(0, 7);
+        if (!porMes[key]) { porMes[key] = []; meses.push(key); }
+        porMes[key].push(s);
+      });
+
+      // Com "Todos" ligado, cada sessão precisa dizer de qual cliente ela é.
+      const etiqueta = s => projAtual !== 'todos' ? '' :
+        '<span class="hs-cli"><i style="background:'+corCliente(s.proj)+'"></i>'+esc(nomeCliente(s.proj))+'</span>';
+
+      let html = '';
+      meses.forEach((key, idx) => {
+        const open = queryAtual ? true : (idx === 0);
+        let body = '';
+        porMes[key].forEach(s => {
+          const txt = s.regs.map(r => r.conteudo || '').join('\n\n');
+          const md  = (window.marked && typeof marked.parse === 'function') ? marked.parse(txt) : '<pre>'+esc(txt)+'</pre>';
+          body += '<div class="bl-sessao"><div class="bl-sessao-h" style="display:flex;align-items:center;gap:8px">'
+               + '<span>'+esc(s.sessao||'')+'</span>'+etiqueta(s)+'</div><div class="bl-hist-md">'+md+'</div></div>';
+        });
+        html += '<div class="bl-month'+(open?' open':'')+'"><div class="bl-month-h">'
+          + '<span class="bl-month-arrow">'+Quadro.ICO.chev+'</span><span>'+esc(monthLabel(key))+'</span>'
+          + '<span class="bl-month-count">'+porMes[key].length+(porMes[key].length>1?' sessões':' sessão')+'</span>'
+          + '</div><div class="bl-month-body">'+body+'</div></div>';
+      });
+      root.innerHTML = html;
+      root.querySelectorAll('.bl-month-h').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('open')));
+    }
+
+    // ── Relatório semanal ────────────────────────────────────────────────────
+    const TG_CLASS  = { 'Dev':'tg-dev', 'Pesquisa':'tg-pesq', 'Design':'tg-design', 'Operacional':'tg-op' };
+    const PRIO_CSS  = { ALTA:'alta', MEDIA:'media', BAIXA:'baixa' };
+
+    // Segunda-feira da semana da data dada (semana = segunda a domingo).
+    function segundaDe(d) {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dow = (x.getDay() + 6) % 7; // 0 = segunda
+      x.setDate(x.getDate() - dow);
+      return x;
+    }
+    let semanaIni = segundaDe(new Date());
+
+    const iso = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    function rotuloSemana(ini) {
+      const fim = new Date(ini); fim.setDate(fim.getDate() + 6);
+      const mes = d => d.toLocaleDateString('pt-BR', { month:'short' }).replace('.','');
+      const mesmoMes = ini.getMonth() === fim.getMonth() && ini.getFullYear() === fim.getFullYear();
+      return mesmoMes
+        ? ini.getDate() + ' – ' + fim.getDate() + ' ' + mes(fim) + ' ' + fim.getFullYear()
+        : ini.getDate() + ' ' + mes(ini) + ' – ' + fim.getDate() + ' ' + mes(fim) + ' ' + fim.getFullYear();
+    }
+    function dataCurta(s) { // '2026-07-21' → '21/jul'
+      if (!s) return '';
+      const [y,m,d] = s.split('-').map(Number);
+      return d + '/' + new Date(y, m-1, d).toLocaleDateString('pt-BR',{month:'short'}).replace('.','');
+    }
+
+    function metaTags(it) {
+      let h = '';
+      const tg = TG_CLASS[it.tipo];
+      h += '<span class="tg '+(tg||'tg-meta')+'">'+esc(it.tipo||'Dev')+'</span>';
+      if (it.modelo)  h += '<span class="tg tg-meta">'+esc(it.modelo)+'</span>';
+      if (it.esforco) h += '<span class="tg tg-meta">esforço '+esc(it.esforco)+'</span>';
+      return h;
+    }
+
+    // Agrupa itens por área (mini-projeto) e monta os cartões.
+    function miniCards(itens, feito) {
+      const areas = [];
+      itens.forEach(it => { const a = it.area || 'Geral'; if (!areas.includes(a)) areas.push(a); });
+      const okIco  = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+      const dotIco = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>';
+      let html = '';
+      areas.forEach(area => {
+        const g = itens.filter(it => (it.area || 'Geral') === area);
+        const temCompart = g.some(it => it.compartilhado);
+        html += '<div class="rep-mini"><div class="rep-mini-hd"><div class="mt">'+esc(area)+'</div>'
+          + (temCompart ? '<span class="mtag">Compartilhado com outro cliente</span>' : '')
+          + '<div class="mcount">'+g.length+'</div></div><div class="rep-mini-bd">';
+        g.forEach(it => {
+          html += '<div class="rep-it '+(feito?'d':'n')+'"><span class="idot">'+(feito?okIco:dotIco)+'</span>'
+            + '<div class="itx">'+esc(it.titulo)
+            + '<div class="rep-itmeta">'+metaTags(it)+'</div></div>'
+            + (feito
+                ? '<div class="idate">'+dataCurta(it.concluido_em)+'</div>'
+                : (it.prioridade ? '<div class="prio '+(PRIO_CSS[it.prioridade]||'baixa')+'">'+esc(PRIO_LABEL[it.prioridade]||it.prioridade)+'</div>' : ''));
+          html += '</div>';
+        });
+        html += '</div></div>';
+      });
+      return html;
+    }
+
+    function dadosRelatorio() {
+      const ini = iso(semanaIni);
+      const fimD = new Date(semanaIni); fimD.setDate(fimD.getDate() + 6);
+      const fim = iso(fimD);
+      const meus = ITENS.filter(doProjeto);
+      const feitos  = meus.filter(it => !aberto(it) && it.concluido_em && it.concluido_em >= ini && it.concluido_em <= fim)
+                          .sort((a,b) => (b.concluido_em||'').localeCompare(a.concluido_em||'') || (a.ordem||0)-(b.ordem||0)); // mais recente primeiro
+      const abertos = meus.filter(aberto)
+                          .sort((a,b) => PRIO_ORDER.indexOf(a.prioridade) - PRIO_ORDER.indexOf(b.prioridade) || (a.ordem||0)-(b.ordem||0));
+      return { feitos, abertos };
+    }
+
+    function corpoRelatorio() {
+      const { feitos, abertos } = dadosRelatorio();
+      const okIco  = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>';
+      const arwIco = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+      let html = '<div class="rep-sec-lbl done">'+okIco+' Feito na semana <span class="cnt">· '
+        + (feitos.length ? feitos.length + ' entrega' + (feitos.length>1?'s':'') : 'nenhuma') + '</span></div>';
+      html += feitos.length ? miniCards(feitos, true)
+        : '<div class="rep-empty">Nenhuma entrega registrada nesta semana.</div>';
+      html += '<div class="rep-sec-lbl next">'+arwIco+' Backlog — próximos passos</div>';
+      html += abertos.length ? miniCards(abertos, false)
+        : '<div class="rep-empty">Nenhum item aberto no backlog.</div>';
+      return html;
+    }
+
+    // Com "Todos" ativo o relatório NÃO soma clientes (D-5): pede para escolher um.
+    function conviteRelatorio() {
+      return '<div class="rep-conv">'+Quadro.ICO.doc
+        + '<div class="t">Escolha um cliente para gerar o relatório</div>'
+        + '<div class="s">O relatório semanal é um documento que vai para o cliente — o do Samuel, por exemplo. '
+        + 'Por isso ele é sempre de um cliente só: misturar frentes num arquivo único mostraria o trabalho de terceiros para quem não deveria ver.</div>'
+        + '<div class="rep-cli">'
+        + CLIENTES.map(c => '<button class="btn btn-sm" data-relcli="'+c.k+'"><i style="background:'+c.c+'"></i>'+esc(c.n)+'</button>').join('')
+        + '</div></div>';
+    }
+
+    function renderRelatorio() {
+      const exp = document.getElementById('repExport');
+      if (projAtual === 'todos') {
+        document.getElementById('repTitle').childNodes[0].textContent = 'Relatório semanal';
+        document.getElementById('repSub').textContent = 'Um documento por cliente — escolha o cliente no topo';
+        document.getElementById('repWk').textContent = rotuloSemana(semanaIni);
+        exp.disabled = true;
+        const body = document.getElementById('repBody');
+        body.innerHTML = conviteRelatorio();
+        body.querySelectorAll('[data-relcli]').forEach(b => b.addEventListener('click', () => setProjeto(b.dataset.relcli)));
+        return;
+      }
+      exp.disabled = false;
+      document.getElementById('repTitle').childNodes[0].textContent = 'Relatório semanal — ' + nomeCliente(projAtual);
+      document.getElementById('repSub').textContent = projAtual === 'remax'
+        ? 'Para apresentar ao Samuel · o que foi feito e o que vem a seguir'
+        : 'O que foi feito e o que vem a seguir';
+      document.getElementById('repWk').textContent = rotuloSemana(semanaIni);
+      document.getElementById('repBody').innerHTML = corpoRelatorio();
+    }
+
+    document.getElementById('repPrev').addEventListener('click', () => { semanaIni.setDate(semanaIni.getDate()-7); renderRelatorio(); });
+    document.getElementById('repNext').addEventListener('click', () => { semanaIni.setDate(semanaIni.getDate()+7); renderRelatorio(); });
+
+    // Exporta o relatório como arquivo HTML independente (baixa no computador).
+    function exportarRelatorio() {
+      if (projAtual === 'todos') { toast('⚠️ Escolha um cliente no topo para exportar o relatório'); return; }
+      const css = 'body{background:#0e0f12;color:#eef0f3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.5;padding:34px;max-width:860px;margin:0 auto}'
+        + 'h1{font-size:19px;margin:0 0 3px}.sub{color:#8a9099;font-size:12.5px;margin-bottom:26px}'
+        + '.rep-sec-lbl{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8a9099;margin:22px 2px 12px;display:flex;align-items:center;gap:8px}'
+        + '.rep-sec-lbl.done{color:#22c55e}.rep-sec-lbl.next{color:#3b82f6}.rep-sec-lbl svg{width:15px;height:15px;stroke:currentColor;fill:none}'
+        + '.rep-sec-lbl .cnt{color:#8a9099;font-weight:500;letter-spacing:0;text-transform:none;font-size:11px}'
+        + '.rep-mini{margin-bottom:12px;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:#16181d}'
+        + '.rep-mini-hd{display:flex;align-items:center;gap:11px;padding:11px 16px;background:#23272e}'
+        + '.rep-mini-hd .mt{font-size:13.5px;font-weight:700;flex:1}'
+        + '.rep-mini-hd .mtag{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:5px;background:rgba(59,130,246,.15);color:#3b82f6}'
+        + '.rep-mini-hd .mcount{font-size:11px;color:#8a9099}'
+        + '.rep-mini-bd{border-top:1px solid rgba(255,255,255,.07)}'
+        + '.rep-it{display:flex;gap:12px;padding:11px 16px;font-size:13px}'
+        + '.rep-it + .rep-it{border-top:1px solid rgba(255,255,255,.07)}.rep-it:nth-child(even){background:#1c1f25}'
+        + '.rep-it .idot{width:16px;height:16px;flex-shrink:0;margin-top:2px}.rep-it.d .idot{color:#22c55e}.rep-it.n .idot{color:#3b82f6}'
+        + '.rep-it .idot svg{width:16px;height:16px;stroke:currentColor;fill:none}.rep-it .itx{flex:1}'
+        + '.rep-itmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center}'
+        + '.tg{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:5px;text-transform:uppercase;white-space:nowrap}'
+        + '.tg-dev{background:rgba(59,130,246,.12);color:#3b82f6}.tg-pesq{background:rgba(167,139,250,.15);color:#a78bfa}'
+        + '.tg-design{background:rgba(236,110,168,.15);color:#ec6ea8}.tg-op{background:rgba(245,158,11,.12);color:#f59e0b}'
+        + '.tg-meta{background:#23272e;color:#8a9099;text-transform:none;letter-spacing:0;font-weight:600}'
+        + '.rep-it .idate{font-size:11px;color:#8a9099;white-space:nowrap;margin-top:1px}'
+        + '.rep-it .prio{font-size:9.5px;font-weight:700;letter-spacing:.05em;padding:2px 7px;border-radius:5px;align-self:flex-start;margin-top:1px;white-space:nowrap;text-transform:uppercase}'
+        + '.prio.alta{background:rgba(239,68,68,.14);color:#ef4444}.prio.media{background:rgba(245,158,11,.12);color:#f59e0b}.prio.baixa{background:#23272e;color:#8a9099}'
+        + '.rep-empty{padding:22px 16px;text-align:center;color:#8a9099;font-size:13px;border:1px dashed rgba(255,255,255,.12);border-radius:10px;margin-bottom:12px}'
+        + '.foot{margin-top:28px;font-size:11px;color:#8a9099;border-top:1px solid rgba(255,255,255,.07);padding-top:12px}';
+      const titulo = 'Relatório semanal — ' + nomeCliente(projAtual);
+      const docHtml = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'
+        + '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        + '<title>'+esc(titulo)+' · '+esc(rotuloSemana(semanaIni))+'</title><style>'+css+'</style></head><body>'
+        + '<h1>'+esc(titulo)+'</h1><div class="sub">Semana de '+esc(rotuloSemana(semanaIni))+'</div>'
+        + corpoRelatorio()
+        + '<div class="foot">Gerado pelo Alex OS em '+new Date().toLocaleDateString('pt-BR')+'</div>'
+        + '</body></html>';
+      const blob = new Blob([docHtml], { type:'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'relatorio-semanal-' + projAtual + '-' + iso(semanaIni) + '.html';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      toast('✅ Relatório exportado');
+    }
+    document.getElementById('repExport').addEventListener('click', exportarRelatorio);
+
+    // ── Caixa de entrada (T-11 — agora entende "Todos") ──────────────────────
+    function limpaErroCampo(idErro, campo) {
+      document.getElementById(idErro).innerHTML = '';
+      if (campo) campo.classList.remove('err');
+    }
+    function mostraErroCampo(idErro, campo, txt) {
+      document.getElementById(idErro).innerHTML =
+        '<div class="field-error">'+Quadro.ICO.alerta+'<span>'+txt+'</span></div>';
+      if (campo) { campo.classList.add('err'); campo.focus(); }
+    }
+
+    async function loadInbox() {
+      const list = document.getElementById('blInboxList');
+      const countEl = document.getElementById('blInboxCount');
+      const badge = document.getElementById('blCaixaBadge');
+      try {
+        let q = db().from('backlog_inbox').select('*').eq('status','novo');
+        if (projAtual !== 'todos') q = q.eq('projeto', projAtual);
+        const { data, error } = await q.order('criado_em', {ascending:false});
+        if (error) throw error;
+        const items = data || [];
+        countEl.textContent = items.length ? '('+items.length+' pendente'+(items.length>1?'s':'')+')' : '';
+        badge.textContent = items.length; badge.classList.toggle('bl-hidden', !items.length);
+        if (!items.length) { list.innerHTML = '<div class="bl-inbox-empty">Nada na caixa. Anote ideias aqui e eu organizo no backlog na próxima sessão.</div>'; return; }
+        const etiqueta = it => projAtual !== 'todos' ? '' :
+          ' <span class="hs-cli"><i style="background:'+corCliente(it.projeto||'alexos')+'"></i>'+esc(nomeCliente(it.projeto||'alexos'))+'</span>';
+        list.innerHTML = items.map(it =>
+          '<div class="bl-inbox-item"><p>'+esc(it.texto)+etiqueta(it)+'</p><button class="btn btn-ghost btn-sm" data-del="'+esc(it.id)+'">Excluir</button></div>'
+        ).join('');
+        list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => delInbox(b.getAttribute('data-del'))));
+      } catch (e) { list.innerHTML = '<div class="bl-inbox-empty">Erro ao carregar a caixa: '+esc(e.message||e)+'</div>'; }
+    }
+
+    // Anotar exige um cliente: "Todos" é jeito de olhar, não é cliente.
+    async function addInboxValue(texto, idErro, campo) {
+      limpaErroCampo(idErro, campo);
+      texto = (texto || '').trim();
+      if (!texto) {
+        mostraErroCampo(idErro, campo, 'Escreva alguma coisa antes de adicionar. Nada foi salvo.');
+        return false;
+      }
+      if (projAtual === 'todos') {
+        mostraErroCampo(idErro, campo, 'Escolha um cliente no topo antes de anotar — com "Todos" ligado eu não sei em qual caixa guardar. Nada foi salvo, o texto continua aqui.');
+        return false;
+      }
+      const { error } = await db().from('backlog_inbox').insert({ texto, projeto: projAtual });
+      if (error) { mostraErroCampo(idErro, campo, 'Não consegui salvar: '+esc(error.message)); return false; }
+      toast('✅ Adicionado à caixa'); loadInbox(); return true;
+    }
+    async function addInbox() {
+      const ta = document.getElementById('blInboxText');
+      if (await addInboxValue(ta.value, 'blInboxErr', ta)) ta.value = '';
+    }
+    async function addQuick() {
+      const el = document.getElementById('blQuickText');
+      if (await addInboxValue(el.value, 'blQuickErr', el)) el.value = '';
+    }
+    async function delInbox(id) {
+      if (!confirm('Excluir este item da caixa de entrada?')) return;
+      const { error } = await db().from('backlog_inbox').delete().eq('id', id);
+      if (error) { toast('❌ ' + error.message); return; }
+      toast('🗑️ Excluído'); loadInbox();
+    }
+
+    // ── Filtros ──────────────────────────────────────────────────────────────
+    document.getElementById('blChips').addEventListener('click', e => {
+      const chip = e.target.closest('.bl-chip'); if (!chip) return;
+      tipoFiltro = chip.dataset.tipo;
+      document.querySelectorAll('.bl-chip').forEach(c => c.classList.toggle('active', c === chip));
+      Quadro.render();
+    });
+    let searchTimer = null;
+    document.getElementById('blSearch').addEventListener('input', function() {
+      queryAtual = norm(this.value);
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { Quadro.render(); renderHistorico(); }, 120);
+    });
+    document.getElementById('blInboxAdd').addEventListener('click', addInbox);
+    document.getElementById('blQuickBtn').addEventListener('click', addQuick);
+    document.getElementById('blQuickText').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addQuick(); } });
+
+    renderModo();
+    renderFiltroCliente();
+    setView(localStorage.getItem(TAB_KEY) || 'kanban');
+    loadAll();
+  })();
+</script>
+</div><!-- /sb-main -->
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dash — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260713h">
+  <style>
+    .dash-alert-bar { margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px; }
+    .dash-alert { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 9px; font-size: 13px; }
+    .dash-alert.red  { background: rgba(239,68,68,.1);  border: 1px solid rgba(239,68,68,.3);  color: #f87171; }
+    .dash-alert.yellow { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #fbbf24; }
+    .dash-alert.blue   { background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3); color: #60a5fa; }
+    .dash-alert-label { font-weight: 700; white-space: nowrap; }
+    .dash-alert-items { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .dash-alert-line { padding: 2px 0; }
+    .dash-alert-click { cursor: pointer; }
+    .dash-alert-click:hover { text-decoration: underline; }
+
+    .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .dash-card-hdr { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .dash-card-title { font-size: 13px; font-weight: 700; }
+    .dash-card-link { font-size: 11px; color: var(--accent); text-decoration: none; }
+    .dash-card-link:hover { text-decoration: underline; }
+    .dash-card-body { padding: 14px 16px; flex: 1; }
+    .dash-card.placeholder { opacity: .5; }
+
+    .dash-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-bottom: 12px; }
+    .dash-kpi { min-width: 0; }
+    .dash-kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dash-kpi-val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* ── Bloco destacado de Tarefas (3.3 Fatia B) ── */
+    .dash-tblock { border: 1px solid var(--accent); border-radius: 12px; background: var(--accent-pale); margin-bottom: 18px; overflow: hidden; }
+    .dash-tblock-hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 15px; border-bottom: 1px solid rgba(255,102,0,.25); }
+    .dash-tblock-title { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .dash-tblock-title .ic { width: 16px; height: 16px; color: var(--accent); }
+    .dash-tblock-title .sub { color: var(--muted); font-weight: 500; }
+    .dash-tblock-body { padding: 6px 14px 10px; }
+    .dt-group { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 800; margin: 10px 2px 2px; }
+    .dt-group.venc { color: var(--danger); } .dt-group.hoje { color: var(--info); }
+    .dt-line { display: flex; align-items: center; gap: 9px; padding: 7px 4px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; }
+    .dt-line:last-child { border-bottom: none; }
+    .dt-line:hover { color: var(--accent); }
+    .dt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dt-dot.venc { background: var(--danger); } .dt-dot.hoje { background: var(--info); }
+    .dt-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dt-tag { padding: 2px 9px; border-radius: 9999px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+    .dt-when { margin-left: auto; font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .dt-when.late { color: var(--danger); }
+    .dash-tblock-empty { padding: 8px 4px; font-size: 13px; color: var(--muted); }
+
+    .dash-stage-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 12px; }
+    .dash-stage-bar-wrap { flex: 1; background: var(--surface2); border-radius: 20px; height: 5px; }
+    .dash-stage-bar { height: 5px; border-radius: 20px; background: var(--accent); }
+    .dash-stage-count { font-size: 11px; color: var(--muted); min-width: 20px; text-align: right; }
+
+    .dash-list-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .dash-list-item:last-child { border-bottom: none; }
+
+    .dash-empty { font-size: 13px; color: var(--muted); padding: 8px 0; }
+
+    .dash-stage-label { min-width:85px;color:var(--muted) }
+    .dash-pv-label    { font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px }
+    .dash-pv-date     { color:var(--muted) }
+    .dash-pipeline-total { font-size:28px;font-weight:900;letter-spacing:-0.03em;line-height:1;margin-bottom:12px }
+    .dash-pipeline-sub   { font-size:12px;color:var(--muted);font-weight:400 }
+    .dash-carteira-hint  { font-size:11px;color:var(--muted);margin-top:4px }
+    .dash-pl-desfecho     { margin-top:14px;padding-top:12px;border-top:1px solid var(--border) }
+    .dash-pl-desfecho-lbl { font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px }
+    .dash-conv-lbl { font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px }
+    .dash-conv-row { display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0 }
+    .dash-conv-from { color:var(--muted) }
+    .dash-conv-from b { color:var(--text);font-weight:600 }
+    .dash-conv-pct { font-family:var(--font-brand);font-weight:800;font-size:12.5px;color:var(--success) }
+    .dash-conv-pct.low { color:var(--warn) }
+    .dash-conv-pct.na  { color:var(--muted) }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260725a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Dash</span>
+    <div class="sb-topbar-right"></div>
+  </div>
+
+  <div class="page">
+    <div id="dashTarefas"></div>
+    <div id="dashAlerts" class="dash-alert-bar"></div>
+    <div id="dashGrid" class="dash-grid">
+      <div class="dash-card"><div class="dash-card-body" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">Carregando...</div></div>
+    </div>
+  </div>
+  <div id="toast"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script>
+// ── Sidebar + Tema + Relógio ─────────────────────────────────────────────────
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(collapsed) {
+    sb.classList.toggle('collapsed', collapsed);
+    localStorage.setItem(SB_KEY, collapsed ? '1' : '0');
+  }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+
+  // Relógio e theme toggle centralizados em `js/sidebar.js`
+})();
+
+function toast(msg,dur=3000){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+
+// ── Dados ──────────────────────────────────────────────────────────────────────
+let _lanc = [], _jobs = [], _imoveis = [], _gestao = [], _carteira = [], _visitas = [], _fech = [], _tarefas = [], _leads = [], _pessoas = [];
+
+async function carregarTudo() {
+  const [l, j, im, g, c, v, f, t, ld, ps] = await Promise.all([
+    db().from('lancamentos').select('data,valor,tipo').eq('transferencia', false).then(r => r.data||[]),
+    db().from('jobs').select('id,tipo,cliente_nome,corretor,data,preco,servicos,status').order('data',{ascending:false}).then(r => r.data||[]),
+    db().from('imoveis').select('id,owner,tel,imovel,rua,num,estagio,updated_at,marcos,proxima_acao').then(r => r.data||[]),
+    db().from('gestao_exclusiva').select('id,dados').then(r => r.data||[]),
+    db().from('imoveis_carteira').select('id,exclusivo,status,valor_venda,publicavel,codigo,rua,numero,complemento,updated_at').then(r => r.data||[]),
+    db().from('visitas').select('id,data,horario,status,carteira_id').then(r => r.data||[]),
+    db().from('fechamentos').select('id,etapa,valor_venda,valor_alex,marcos').then(r => r.data||[]),
+    db().from('tarefas').select('id,lead_id,pessoa_id,carteira_id,rotulo,texto,quando,feito').eq('feito', false).then(r => r.data||[]),
+    db().from('leads').select('id,nome,carteira_id').then(r => r.data||[]),
+    db().from('pessoas').select('id,nome').then(r => r.data||[]),
+  ]);
+  _lanc = l; _jobs = j; _imoveis = im; _gestao = g; _carteira = c; _visitas = v; _fech = f; _tarefas = t; _leads = ld; _pessoas = ps;
+}
+
+const fmtM = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+const today = () => new Date();
+const diffDias = (dateStr) => {
+  if (!dateStr) return 0;
+  return Math.floor((today() - new Date(dateStr)) / 86400000);
+};
+const mesAtual = () => { const n=today(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); };
+
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// 3.3 Fatia B — rótulo → cor da tag (mesmo mapa da área Tarefas)
+const ROT_COR = { 'Proprietário':'var(--accent)','Comprador':'var(--info)','Corretor':'#a78bfa','Captação':'#2dd4bf','Imóvel':'var(--success)','Pagamento':'var(--warn)' };
+function carteiraLbl(c){ if(!c) return 'Imóvel'; const end=[c.rua,c.numero].filter(Boolean).join(', '); return c.codigo ? (c.codigo+(end?' · '+end:'')) : (end||'Imóvel'); }
+// Resolve o vínculo da tarefa (pessoa/imóvel/lead) → nome + link pra tela exata
+function vincTarefa(t) {
+  if (t.lead_id)     { const ld=(_leads||[]).find(x=>x.id===t.lead_id); return { nome: ld&&ld.nome?ld.nome:'Lead', link:'imoveis.html?tab=visitas&lead='+t.lead_id }; }
+  if (t.carteira_id) { const c=(_carteira||[]).find(x=>x.id===t.carteira_id); return { nome: carteiraLbl(c), link:'imoveis.html?tab=carteira&abrir='+t.carteira_id }; }
+  if (t.pessoa_id)   { const p=(_pessoas||[]).find(x=>x.id===t.pessoa_id); return { nome: p&&p.nome?p.nome:'Pessoa', link:'contatos.html?abrir='+t.pessoa_id }; }
+  return null;
+}
+function tarefaLinha(t, grupo, sufixo) {
+  const v = vincTarefa(t);
+  const cor = ROT_COR[t.rotulo] || 'var(--muted)';
+  const tag = (t.rotulo || v)
+    ? '<span class="dt-tag" style="background:'+cor+'1f;color:'+cor+'">' + escHtml([t.rotulo, v?v.nome:null].filter(Boolean).join(' · ')) + '</span>'
+    : '';
+  const onclick = v ? ' onclick="location.href=\''+v.link+'\'"' : '';
+  return '<div class="dt-line"'+onclick+'>'
+    + '<span class="dt-dot '+grupo+'"></span>'
+    + '<span class="dt-txt">' + escHtml(t.texto||'Tarefa') + '</span>'
+    + tag
+    + '<span class="dt-when'+(grupo==='venc'?' late':'')+'">'+escHtml(sufixo)+'</span>'
+    + '</div>';
+}
+
+// Bloco destacado "Tarefas & Lembretes" (vencidas + hoje)
+function renderTarefasBlock() {
+  const el = document.getElementById('dashTarefas');
+  if (!el) return;
+  const hojeStr = new Date().toISOString().slice(0,10);
+  const nowHH = (() => { const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); })();
+  const venc = [], hoje = [];
+  (_tarefas||[]).filter(t => t.quando).sort((a,b)=>(b.quando||'').localeCompare(a.quando||'')).forEach(t => {
+    const q = new Date(t.quando); if (isNaN(q)) return;
+    const qDate = t.quando.slice(0,10);
+    const hh = (q.getHours()||q.getMinutes()) ? String(q.getHours()).padStart(2,'0')+':'+String(q.getMinutes()).padStart(2,'0') : '';
+    if (qDate < hojeStr) { const dias = Math.round((new Date(hojeStr)-new Date(qDate))/86400000); venc.push(tarefaLinha(t,'venc', dias===1?'venceu ontem':'venceu há '+dias+'d')); }
+    else if (qDate === hojeStr) {
+      if (hh && hh < nowHH) venc.push(tarefaLinha(t,'venc','venceu hoje'+(hh?' '+hh:'')));
+      else hoje.push(tarefaLinha(t,'hoje','hoje'+(hh?' '+hh:'')));
+    }
+  });
+  const ico = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
+  const sub = (venc.length||hoje.length) ? '<span class="sub">· '+venc.length+' vencida'+(venc.length!==1?'s':'')+' · '+hoje.length+' hoje</span>' : '';
+  let body;
+  if (!venc.length && !hoje.length) body = '<div class="dash-tblock-empty">Nada para hoje. Tudo em dia.</div>';
+  else body = (venc.length?'<div class="dt-group venc">Vencidas '+venc.length+'</div>'+venc.join(''):'')
+            + (hoje.length?'<div class="dt-group hoje">Hoje '+hoje.length+'</div>'+hoje.join(''):'');
+  el.innerHTML = '<div class="dash-tblock"><div class="dash-tblock-hdr"><span class="dash-tblock-title">'+ico+'Tarefas &amp; Lembretes '+sub+'</span>'
+    + '<button class="btn btn-primary btn-sm" onclick="location.href=\'tarefas.html?novo=1\'">+ Nova</button></div>'
+    + '<div class="dash-tblock-body">'+body+'</div></div>';
+}
+
+function calcularAlertas() {
+  const urgente = [], atencao = [], hoje = [];
+  const ma = mesAtual();
+  const lancMes = _lanc.filter(l => (l.data||'').startsWith(ma));
+  const recM  = lancMes.filter(l=>l.tipo==='receita').reduce((a,l)=>a+Number(l.valor||0),0);
+  const despM = lancMes.filter(l=>l.tipo==='despesa').reduce((a,l)=>a+Number(l.valor||0),0);
+  if (recM - despM < 0) urgente.push('Saldo FMS negativo este mês');
+
+  _gestao.forEach(g => {
+    const d = g.dados || {};
+    if (d.status === 'encerrada' || d.status === 'vendida') return;   // 4d.2 — finalizadas não alertam
+    const fim = d.fim ? new Date(d.fim) : null;
+    const diasFim = fim ? Math.floor((fim - today()) / 86400000) : null;
+    const diasSemRev = diffDias(d.ultima_revisao || d.inicio);
+    const revFreq = d.revisao_freq || 60;
+    const nome = d.imovel || 'Imóvel';
+    if (diasFim !== null && diasFim < 0) urgente.push('Contrato vencido: ' + nome);
+    else if (diasFim !== null && diasFim <= 7) urgente.push('Contrato vence em ' + diasFim + 'd: ' + nome);
+    else if (diasFim !== null && diasFim <= 15) atencao.push('Contrato vence em ' + diasFim + 'd: ' + nome);
+    else if (diasFim !== null && diasFim <= 30) atencao.push('Renovação em ' + diasFim + 'd: ' + nome);
+    if (diasSemRev >= revFreq) urgente.push('Revisão atrasada (' + diasSemRev + 'd): ' + nome);
+  });
+
+  const jobsAtrasados = _jobs.filter(j => j.status !== 'pago' && diffDias(j.data) > 14);
+  if (jobsAtrasados.length) {
+    atencao.push(jobsAtrasados.length + ' job' + (jobsAtrasados.length!==1?'s':'') + ' não pago' + (jobsAtrasados.length!==1?'s':'') + ' há +14 dias');
+  }
+  const PZ = { prospeccao: 5, visita1: 7, acm: 7 };
+  const STAGE_LBL = { prospeccao: 'Prospecção', visita1: '1ª visita', acm: 'ACM', assinado: 'Assinado' };
+  _imoveis.forEach(im => {
+    if (im.estagio === 'perdido' || im.estagio === 'assinado') return;
+    const prazo = PZ[im.estagio]; if (!prazo) return;
+    const marco = im.marcos && im.marcos[im.estagio]; if (!marco) return;
+    const dias = diffDias(marco);
+    if (dias <= prazo) return;                                  // só dispara quando passa o prazo
+    const nome  = im.imovel || im.rua || im.owner || 'Imóvel';
+    const etapa = STAGE_LBL[im.estagio] || im.estagio;
+    const prox  = im.proxima_acao ? ' — ' + im.proxima_acao : '';
+    urgente.push('Captação parada: ' + nome + ' (' + etapa + ', ' + dias + 'd)' + prox);
+  });
+  const incompletos = _imoveis.filter(im => im.estagio !== 'perdido' && (!im.owner || !im.tel || !im.rua || !im.num));
+  if (incompletos.length) {
+    atencao.push(incompletos.length + ' captação' + (incompletos.length!==1?'ões':'') + ' incompleta' + (incompletos.length!==1?'s':'') + ' no Pipeline');
+  }
+
+  // 5.1 — Lembretes do ACM (agenda da apresentação)
+  _imoveis.forEach(im => {
+    if (im.estagio === 'perdido' || im.estagio === 'assinado') return;
+    const m = im.marcos || {};
+    const ag = m.acm_agendado && m.acm_agendado.data;
+    const apres = m.acm;
+    const nome = im.imovel || im.rua || im.owner || 'Imóvel';
+    const dBR = s => s ? s.split('-').reverse().join('/') : '';
+    if (ag && !apres) {
+      const dias = diffDias(ag);                                   // >0 = já passou
+      if (dias > 0) urgente.push('Apresentação do ACM agendada venceu há ' + dias + 'd: ' + nome + ' — apresentar ou reagendar');
+      else atencao.push('Fazer o ACM até ' + dBR(ag) + (m.acm_agendado.hora ? ' ' + m.acm_agendado.hora : '') + ': ' + nome);
+    }
+    if (apres && im.estagio === 'acm') {
+      urgente.push('Apresentação do ACM feita — dar andamento (assinar ou perder): ' + nome);
+    }
+  });
+
+  // Visitas a atualizar: agendadas cuja data+hora já passou (lembrete pós-visita)
+  const hojeStr = new Date().toISOString().slice(0, 10);
+  const nowHH = (() => { const n = new Date(); return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0'); })();
+  (_visitas||[]).filter(v => (v.status||'agendada') === 'agendada' && v.data && (v.data < hojeStr || (v.data === hojeStr && v.horario && v.horario < nowHH)))
+    .forEach(v => {
+      const c = (_carteira||[]).find(x => x.id === v.carteira_id);
+      const lbl = c ? ([c.rua, c.numero].filter(Boolean).join(', ') + (c.complemento ? ' · ' + c.complemento : '')) : 'Imóvel';
+      atencao.push('Visita a atualizar: ' + lbl + ' (' + (v.data ? v.data.split('-').reverse().join('/') : '') + (v.horario ? ' ' + v.horario : '') + ')');
+    });
+
+  // 3.3 Fatia B — as tarefas saíram daqui; agora vivem no bloco destacado (renderTarefasBlock).
+
+  return { urgente, atencao, hoje };
+}
+
+function renderAlertas() {
+  const { urgente, atencao, hoje } = calcularAlertas();
+  const el = document.getElementById('dashAlerts');
+  let html = '';
+  const linhas = arr => arr.map(a => '<div class="dash-alert-line">' + a + '</div>').join('');
+  if (urgente.length) {
+    html += '<div class="dash-alert red"><span class="dash-alert-label">Urgente</span><div class="dash-alert-items">' + linhas(urgente) + '</div></div>';
+  }
+  if (atencao.length) {
+    html += '<div class="dash-alert yellow"><span class="dash-alert-label">Atenção</span><div class="dash-alert-items">' + linhas(atencao) + '</div></div>';
+  }
+  if (hoje.length) {
+    html += '<div class="dash-alert blue"><span class="dash-alert-label">Hoje</span><div class="dash-alert-items">' + linhas(hoje) + '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function cardFMS() {
+  const ma = mesAtual();
+  const lancMes = _lanc.filter(l => (l.data||'').startsWith(ma));
+  const rec  = lancMes.filter(l=>l.tipo==='receita').reduce((a,l)=>a+Number(l.valor||0),0);
+  const desp = lancMes.filter(l=>l.tipo==='despesa').reduce((a,l)=>a+Number(l.valor||0),0);
+  const saldo = rec - desp;
+  const aRec = _jobs.filter(j=>j.status!=='pago').reduce((a,j)=>a+Number(j.preco||0),0);
+  return `<div class="dash-card">
+    <div class="dash-card-hdr"><span class="dash-card-title">FMS</span><a class="dash-card-link" href="financeiro.html">ver mais →</a></div>
+    <div class="dash-card-body">
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="dash-kpi-label">Receita (mês)</div><div class="dash-kpi-val col-success">${fmtM(rec)}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Despesas</div><div class="dash-kpi-val col-danger">${fmtM(desp)}</div></div>
+      </div>
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="dash-kpi-label">Saldo</div><div class="dash-kpi-val ${saldo>=0?'col-success':'col-danger'}">${fmtM(saldo)}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">A receber</div><div class="dash-kpi-val col-warn">${fmtM(aRec)}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function cardPV() {
+  const ma = mesAtual();
+  const jobsMes = _jobs.filter(j => (j.data||'').startsWith(ma));
+  const nMes = jobsMes.length;
+  const recMes = jobsMes.filter(j=>j.status==='pago').reduce((a,j)=>a+Number(j.preco||0),0);
+  const pendentes = _jobs.filter(j=>j.status!=='pago');
+  const aRec = pendentes.reduce((a,j)=>a+Number(j.preco||0),0);
+  const proxJobs = _jobs.filter(j => j.status==='agendado').slice(0,3);
+  const df = s => { if(!s) return '—'; const p=s.split('-'); return p[2]+'/'+p[1]; };
+  const nome = j => j.tipo==='RE/MAX Studio 76' ? (j.corretor||'Studio 76') : (j.cliente_nome||j.tipo||'—');
+  return `<div class="dash-card">
+    <div class="dash-card-hdr"><span class="dash-card-title">P&V</span><a class="dash-card-link" href="photo.html">ver mais →</a></div>
+    <div class="dash-card-body">
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="dash-kpi-label">Jobs (mês)</div><div class="dash-kpi-val">${nMes}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Recebido</div><div class="dash-kpi-val col-success">${fmtM(recMes)}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">A receber</div><div class="dash-kpi-val col-warn">${fmtM(aRec)}</div></div>
+      </div>
+      ${proxJobs.length ? '<div class="dash-pv-label">Próximos agendados</div>' +
+        proxJobs.map(j => `<div class="dash-list-item"><span>${nome(j)}</span><span class="dash-pv-date">${df(j.data)}</span></div>`).join('') : ''}
+    </div>
+  </div>`;
+}
+
+function cardPipeline() {
+  // Espelha o quadro da Captação: 3 etapas ativas (Prospecção · 1ª Visita · ACM).
+  // 'assinado' virou Gestão Exclusiva e 'perdido' saíram do quadro → mostrados como desfecho.
+  const ETAPAS = [
+    {key:'prospeccao',label:'Prospecção'},
+    {key:'visita1',   label:'1ª Visita'},
+    {key:'acm',       label:'ACM'},
+  ];
+  const cont = k => _imoveis.filter(im => im.estagio === k).length;
+  const total = ETAPAS.reduce((a,e) => a + cont(e.key), 0);   // imóveis em captação = só as 3 etapas do quadro
+  const max = Math.max(1, ...ETAPAS.map(e => cont(e.key)));
+  const rows = ETAPAS.map(e => {
+    const n = cont(e.key);
+    const pct = Math.round((n/max)*100);
+    return `<div class="dash-stage-row">
+      <span class="dash-stage-label">${e.label}</span>
+      <div class="dash-stage-bar-wrap"><div class="dash-stage-bar" style="width:${pct}%"></div></div>
+      <span class="dash-stage-count">${n}</span>
+    </div>`;
+  }).join('');
+  const ge = cont('assinado'), perdidos = cont('perdido');
+  return `<div class="dash-card">
+    <div class="dash-card-hdr"><span class="dash-card-title">Pipeline</span><a class="dash-card-link" href="imoveis.html">ver mais →</a></div>
+    <div class="dash-card-body">
+      <div class="dash-pipeline-total">${total} <span class="dash-pipeline-sub">imóveis em captação</span></div>
+      ${rows}
+      <div class="dash-pl-desfecho">
+        <div class="dash-pl-desfecho-lbl">Desfecho</div>
+        <div class="dash-kpis">
+          <div class="dash-kpi"><div class="dash-kpi-label">Gestão Exclusiva</div><div class="dash-kpi-val col-success">${ge}</div></div>
+          <div class="dash-kpi"><div class="dash-kpi-label">Perdidos</div><div class="dash-kpi-val ${perdidos>0?'col-danger':''}">${perdidos}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function cardGestao() {
+  const total = _gestao.length;
+  const urgentes = _gestao.filter(g => {
+    const d = g.dados||{};
+    const fim = d.fim ? new Date(d.fim) : null;
+    const diasFim = fim ? Math.floor((fim - today()) / 86400000) : null;
+    const diasSemRev = diffDias(d.ultima_revisao||d.inicio);
+    return (diasFim !== null && diasFim <= 7) || diasSemRev >= (d.revisao_freq||60);
+  }).length;
+  const totalLeads = _gestao.reduce((a, g) => {
+    const leads = (g.dados?.leads||[]);
+    return a + leads.filter(l => l.status !== 'descartado' && l.status !== 'fechado').length;
+  }, 0);
+  return `<div class="dash-card">
+    <div class="dash-card-hdr"><span class="dash-card-title">Gestão Exclusiva</span><a class="dash-card-link" href="imoveis.html">ver mais →</a></div>
+    <div class="dash-card-body">
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="dash-kpi-label">Imóveis</div><div class="dash-kpi-val">${total}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Alertas</div><div class="dash-kpi-val ${urgentes>0?'col-danger':'col-success'}">${urgentes}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Leads ativos</div><div class="dash-kpi-val">${totalLeads}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function cardCarteira() {
+  const vit = _carteira.filter(c=>c.publicavel!==false);   // só a vitrine (exclui "em captação")
+  const total = vit.length;
+  const exclusivos = vit.filter(c=>c.exclusivo).length;
+  const totalVal = vit.reduce((a,c)=>a+Number(c.valor_venda||0),0);
+  return `<div class="dash-card">
+    <div class="dash-card-hdr"><span class="dash-card-title">Imóveis Carteira</span><a class="dash-card-link" href="imoveis.html">ver mais →</a></div>
+    <div class="dash-card-body">
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="dash-kpi-label">Imóveis</div><div class="dash-kpi-val">${total}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Exclusivos</div><div class="dash-kpi-val col-accent">${exclusivos}</div></div>
+      </div>
+      ${totalVal > 0 ? `<div class="dash-carteira-hint">Portfólio total: <strong>${fmtM(totalVal)}</strong></div>` : ''}
+    </div>
+  </div>`;
+}
+
+// 4d.D4 — Finalizações da esteira (vendeu / venceu / perdeu). Contadores agora; período afina na Fatia 5.
+function cardFinalizacoes() {
+  const vendidos  = (_carteira||[]).filter(c => c.status === 'vendido');
+  const encerradas= (_gestao||[]).filter(g => (g.dados||{}).status === 'encerrada');
+  const perdidas  = (_imoveis||[]).filter(im => im.estagio === 'perdido');
+  const vendasPerd= (_fech||[]).filter(f => f.marcos && f.marcos.perdida);
+  const total = vendidos.length + encerradas.length + perdidas.length + vendasPerd.length;
+
+  const ultVend = vendidos.slice().sort((a,b)=>(b.updated_at||'').localeCompare(a.updated_at||''))[0];
+  const ultPerd = perdidas.slice().sort((a,b)=>(((b.marcos||{}).perdido||{}).data||'').localeCompare(((a.marcos||{}).perdido||{}).data||''))[0];
+  const lblVend = ultVend ? ([ultVend.rua, ultVend.numero].filter(Boolean).join(', ') || 'imóvel') : '';
+  const lblPerd = ultPerd ? (ultPerd.imovel || ultPerd.rua || ultPerd.owner || 'imóvel') : '';
+
+  return `<div class="dash-card">
+    <div class="dash-card-hdr"><span class="dash-card-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Finalizações</span><a class="dash-card-link" href="imoveis.html">ver mais →</a></div>
+    <div class="dash-card-body">
+      ${total === 0 ? '<div class="dash-empty" style="text-align:center;padding:16px 0;color:var(--muted)">Nenhuma finalização ainda</div>' : `
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="dash-kpi-label">Vendidos</div><div class="dash-kpi-val col-success">${vendidos.length}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Gestões encerradas</div><div class="dash-kpi-val col-danger">${encerradas.length}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Captações perdidas</div><div class="dash-kpi-val">${perdidas.length}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Vendas perdidas</div><div class="dash-kpi-val col-danger">${vendasPerd.length}</div></div>
+      </div>
+      ${lblVend ? `<div class="dash-carteira-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>Último vendido: <strong>${lblVend}</strong></div>` : ''}
+      ${lblPerd ? `<div class="dash-carteira-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>Última perdida: <strong>${lblPerd}</strong></div>` : ''}`}
+    </div>
+  </div>`;
+}
+
+// Fatia 5 — resumo de KPIs Pandora no Dash (recorte fixo: mês + ano)
+function cardKPIsPandora() {
+  const ano = String(today().getFullYear());
+  const ma  = mesAtual();
+  const moneyShort = v => { v = Number(v)||0; if (Math.abs(v)>=1e6) return 'R$ '+(v/1e6).toFixed(2).replace('.',',')+'M'; if (Math.abs(v)>=1e3) return 'R$ '+Math.round(v/1e3)+'k'; return fmtM(v); };
+  // Vendas perdidas (marcos.perdida) não contam em VGV nem comissão a receber.
+  const ativa = f => !f.marcos?.perdida;
+  const vgvMes = (_fech||[]).filter(f => ativa(f) && (f.marcos?.assinatura||'').startsWith(ma)).reduce((a,f)=>a+Number(f.valor_venda||0),0);
+  const comPipe= (_fech||[]).filter(f => ativa(f) && (f.etapa||'proposta')!=='escritura').reduce((a,f)=>a+Number(f.valor_alex||0),0);
+  const geAno  = (_imoveis||[]).filter(im => (im.marcos?.assinado||'').startsWith(ano)).length;
+  const META = 20, pctMeta = Math.min(100, Math.round(geAno/META*100));
+  // Conversão por etapa (cumulativo: marcos guardam só a etapa atual; quem está em 'assinado' já passou por todas)
+  const ORDER = ['prospeccao','visita1','acm','assinado'];
+  const capsFunil = (_imoveis||[]).filter(im => im.estagio !== 'perdido');
+  const fN = ORDER.map((_,i) => capsFunil.filter(im => ORDER.indexOf(im.estagio) >= i).length);
+  const convRow = (de, a, label) => {
+    const pct = fN[de] ? Math.round(fN[a]/fN[de]*100) : null;
+    const cls = pct === null ? 'na' : (pct < 50 ? 'low' : '');
+    return `<div class="dash-conv-row"><span class="dash-conv-from">${label}</span><span class="dash-conv-pct ${cls}">${pct === null ? '—' : pct + '%'}</span></div>`;
+  };
+  return `<div class="dash-card">
+    <div class="dash-card-hdr"><span class="dash-card-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>KPIs Pandora</span><a class="dash-card-link" href="imoveis.html?tab=kpis">ver completo →</a></div>
+    <div class="dash-card-body">
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="dash-kpi-label">VGV no mês</div><div class="dash-kpi-val col-success">${moneyShort(vgvMes)}</div></div>
+        <div class="dash-kpi"><div class="dash-kpi-label">Comissão a receber</div><div class="dash-kpi-val col-accent">${moneyShort(comPipe)}</div></div>
+      </div>
+      <div class="dash-carteira-hint" style="margin-top:10px">GE no ano: <strong>${geAno} de ${META}</strong> · faltam ${Math.max(0,META-geAno)} (${pctMeta}%)</div>
+      <div class="dash-conv-lbl">Conversão entre etapas</div>
+      ${convRow(0,1,'<b>Prospecção</b> → 1ª Visita')}
+      ${convRow(1,2,'<b>1ª Visita</b> → ACM')}
+      ${convRow(2,3,'<b>ACM</b> → Gestão Exclusiva')}
+    </div>
+  </div>`;
+}
+
+function cardProjetos() {
+  return `<div class="dash-card placeholder">
+    <div class="dash-card-hdr"><span class="dash-card-title">Projetos</span><a class="dash-card-link" href="projetos.html">ver mais →</a></div>
+    <div class="dash-card-body">
+      <div class="dash-empty" style="text-align:center;padding:16px 0">Em breve</div>
+    </div>
+  </div>`;
+}
+
+function renderDash() {
+  renderTarefasBlock();
+  renderAlertas();
+  document.getElementById('dashGrid').innerHTML =
+    cardFMS() + cardPV() + cardPipeline() + cardGestao() + cardCarteira() + cardKPIsPandora() + cardFinalizacoes() + cardProjetos();
+}
+
+async function init() {
+  await initSupabase();
+  await carregarTudo();
+  renderDash();
+}
+init().catch(e => {
+  document.getElementById('dashGrid').innerHTML = '<div class="dash-card"><div class="dash-card-body col-danger">Erro ao carregar: ' + e.message + '</div></div>';
+});
+</script>
+</body>
+</html>

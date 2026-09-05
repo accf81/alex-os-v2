@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Due Diligence automática — o que o sistema vai fazer · Wilton</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0e0f12; --surface:#16181d; --surface2:#1c1f25; --surface3:#23272e;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --text:#eef0f3; --muted:#8a9099;
+  --accent:#ff6600; --accent-light:#ff8533; --accent-pale:rgba(255,102,0,.10); --accent-line:rgba(255,102,0,.32);
+  --success:#22c55e; --success-pale:rgba(34,197,94,.12); --success-line:rgba(34,197,94,.3);
+  --warn:#eab308; --warn-pale:rgba(234,179,8,.12); --warn-line:rgba(234,179,8,.3);
+  --info:#3b82f6; --info-pale:rgba(59,130,246,.12); --info-line:rgba(59,130,246,.3);
+  --muteb:#6b7280; --mute-pale:rgba(138,144,153,.12);
+  --radius:10px; --radius-sm:6px; --radius-lg:12px;
+  --font:'Montserrat',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;padding:26px 34px 70px}
+svg.i{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:14px;height:14px}
+
+.hero{border:1px solid var(--border);background:linear-gradient(180deg,var(--surface2),var(--surface));border-radius:var(--radius-lg);padding:24px 28px;margin-bottom:16px}
+.hero .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.02em}
+.hero .who{color:var(--muted);font-size:13px;font-weight:600;margin-top:5px}
+.datebadge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700}
+.momento{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-size:14px}
+.momento b{color:var(--accent-light)}
+
+.quem{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:22px;font-size:13.5px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.quem .lb{color:var(--muted);font-weight:600}
+.quem button{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.quem button:hover{border-color:var(--accent-line);color:var(--text)}
+.quem button.on{background:var(--accent-pale);border-color:var(--accent);color:var(--accent-light)}
+.quem .dica{color:var(--muted);font-size:12.5px;margin-left:auto}
+
+.sechead{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 13px}
+.sechead svg{color:var(--accent-light)}
+
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+.card{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-lg);padding:20px 22px;display:flex;flex-direction:column;height:100%}
+.card h3{font-size:15px;font-weight:800;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.card .cs{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+.card .corpo{flex:1}
+.card.ok{border-color:var(--success-line)} .card.ok h3{color:var(--success)}
+.card.no{border-color:var(--mute-pale)} .card.no h3{color:var(--muteb)}
+
+.big{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px}
+.kpi{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.kpi .v{font-size:27px;font-weight:800;color:var(--accent-light);letter-spacing:-.02em}
+.kpi .l{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+ul.lista{list-style:none;display:flex;flex-direction:column;gap:9px}
+ul.lista li{position:relative;padding-left:19px;font-size:13.5px}
+ul.lista li::before{content:'';position:absolute;left:1px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--muteb)}
+ul.lista.g li::before{background:var(--success)}
+ul.lista.y li::before{background:var(--warn)}
+.mini{color:var(--muted);font-size:12px;margin-top:4px;display:block}
+
+.regra{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:var(--radius-sm);padding:13px 15px;margin-bottom:10px;font-size:13.5px}
+.regra .t{font-weight:700}
+.regra .d{color:var(--muted);font-size:12.5px;margin-top:5px}
+
+.perg{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px}
+.perg .num{font-size:11px;font-weight:800;color:var(--accent-light);letter-spacing:.05em}
+.perg .txt{font-size:14.5px;margin-top:6px}
+.perg .pq{color:var(--muted);font-size:12.5px;margin-top:7px}
+
+.caso{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);padding:18px 20px;display:flex;flex-direction:column;height:100%}
+.caso .cod{font-size:11px;font-weight:700;color:var(--accent-light);letter-spacing:.04em}
+.caso .end{font-size:14.5px;font-weight:700;margin-top:3px}
+.caso .por{color:var(--muted);font-size:12.5px;margin-top:6px;flex:1}
+.caso .dado{margin-top:11px;padding-top:11px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+.caso .dado b{color:var(--text)}
+
+.fb{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border2)}
+.fb-q{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.fb-txt{width:100%;min-height:58px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:13.5px;padding:10px 12px;resize:vertical}
+.fb-txt:focus{outline:none;border-color:var(--accent-line)}
+.fb-txt::placeholder{color:var(--muteb)}
+.fb-send{margin-top:8px;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);border-radius:var(--radius-sm);padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.fb-send:hover{background:rgba(255,102,0,.18);border-color:var(--accent)}
+.fb-send:disabled{opacity:.6;cursor:default}
+.fb-done{display:none;align-items:center;gap:8px;color:var(--success);font-size:13px;font-weight:700}
+
+.foot{margin-top:34px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+@media(max-width:1200px){.cols2,.cols3,.big{grid-template-columns:1fr}}
+
+@media(max-width:820px){
+  .wrap{padding:16px 14px 54px}
+  .hero{padding:18px 16px;margin-bottom:12px}
+  .hero h1{font-size:20px;line-height:1.25}
+  .hero .top{gap:10px}
+  .datebadge{padding:6px 12px;font-size:12px}
+  .quem{position:static;padding:10px 12px;gap:8px}
+  .quem .dica{margin-left:0;width:100%;font-size:11.5px}
+  .card,.perg,.dec,.caso,.fase,.ask-box,.regra{padding:15px 14px}
+  .kpi{padding:14px 15px}
+  .kpi .v{font-size:22px}
+  .sechead{margin:20px 0 10px;font-size:11px}
+  .tabela-rola{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+  .tabela-rola table{min-width:560px}
+  ol.rot li{padding-left:28px}
+  .foot{flex-direction:column;gap:6px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="top">
+      <div>
+        <h1>Due Diligence automática — o que o sistema vai fazer</h1>
+        <div class="who">Alex Fontes (Pandora) · para Wilton Leem · RE/MAX Studio 76</div>
+      </div>
+      <div class="datebadge">
+        <svg class="i sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        29 de julho de 2026
+      </div>
+    </div>
+    <div class="momento">
+      Antes de construir qualquer coisa, escrevi o que o sistema precisa fazer — para você conferir se está certo. Este documento é o combinado: o que estiver aqui é o que será construído, e o que não estiver, não será. <b>Cada bloco tem um campo para você escrever</b>. Não precisa responder tudo de uma vez.
+    </div>
+  </div>
+
+  <div class="quem">
+    <span class="lb">Quem está escrevendo:</span>
+    <button data-a="Wilton">Wilton</button>
+    <button data-a="Alex">Alex</button>
+    <span class="dica">Escolha uma vez; vale para todos os campos.</span>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    O número que muda tudo — e veio seu
+  </div>
+
+  <div class="card">
+    <div class="cs">Você me disse que uma diligência completa leva de 40 minutos a 1 hora e 20. Fiz a conta.</div>
+    <div class="big">
+      <div class="kpi"><div class="v">208 horas</div><div class="l">é o que os 208 casos parados representam de trabalho — 26 dias úteis inteiros</div></div>
+      <div class="kpi"><div class="v">20 h/mês</div><div class="l">só para dar conta dos casos novos que entram, sem tocar na fila</div></div>
+      <div class="kpi"><div class="v">≈ 5 h/mês</div><div class="l">é o tempo que hoje sobra para a diligência, pelo ritmo real de conclusão</div></div>
+    </div>
+    <div class="regra" style="border-left-color:var(--accent);margin-top:14px">
+      <div class="t">A conclusão, e é ela que sustenta o projeto</div>
+      <div class="d">Você não é lento — uma hora por caso é rápido. O que não existe é <b>tempo disponível</b>: seriam 20 horas por mês só para empatar, mais 208 horas para zerar o passado. Por isso o objetivo do sistema não é ser mais rápido que você, e sim <b>fazer sem consumir a sua hora</b> — deixando para você a conferência e a decisão, que são minutos.</div>
+    </div>
+    <div class="fb" data-bloco="Tempo por caso e a conta das 208 horas">
+      <div class="fb-q">Essa conta bate com a sua realidade?</div>
+      <textarea class="fb-txt" placeholder="Se o número estiver errado, me corrija — ele é a base de tudo que vou apresentar ao Samuel."></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+    As suas regras viraram regra do sistema
+  </div>
+
+  <div class="card">
+    <div class="cs">Isto é o que você me ensinou na segunda-feira, escrito de um jeito que o sistema consegue seguir sozinho. Confira se entendi certo — um erro aqui vira erro em 208 casos.</div>
+    <div class="corpo">
+      <div class="regra">
+        <div class="t">Antecessores: 10 anos — e sem limite quando houve doação ou parentesco</div>
+        <div class="d">O sistema vai buscar os antecessores dos últimos 10 anos, porque é o maior prazo de prescrição do Código Civil. Se encontrar doação ou transmissão entre parentes na cadeia, ignora o prazo e inclui, marcando o motivo.</div>
+      </div>
+      <div class="regra">
+        <div class="t">Dois adquirentes no plural puxam os dois — mesmo na separação de bens</div>
+        <div class="d">Se a matrícula diz "adquiriram ele e sua esposa", as duas pessoas entram. Se diz "Fulano, casado com Beltrana", na separação convencional entra só o titular — e a tela explica por que a outra pessoa ficou de fora.</div>
+      </div>
+      <div class="regra">
+        <div class="t">Quem assinou o contrato tem que ser o titular da matrícula</div>
+        <div class="d">Se não bater, o sistema <b>para o caso</b>, não emite nenhuma certidão e prepara o texto de devolução ao corretor, com os nomes divergentes.</div>
+      </div>
+      <div class="regra">
+        <div class="t">O número da matrícula é conferido antes de pedir</div>
+        <div class="d">Como o corretor às vezes preenche o código do cartório no lugar do número da matrícula, o sistema compara com o documento antes de gastar. Se divergir, chama você.</div>
+      </div>
+      <div class="regra">
+        <div class="t">Alerta de habitação de interesse social (HIS)</div>
+        <div class="d">Imóvel pequeno em empreendimento recente levanta a bandeira, com a explicação do risco. O alerta não pode ser apagado pelo sistema — se alguém descartar, fica registrado quem e quando.</div>
+      </div>
+      <div class="regra">
+        <div class="t">Certidão do TJSP que vira protocolo é espera, não é erro</div>
+        <div class="d">O caso entra numa fila de espera com o número do pedido, e o sistema volta a buscar sozinho de 3 em 3 horas, das 7h às 19h, por até 5 dias úteis. Os outros casos do lote seguem normalmente.</div>
+      </div>
+    </div>
+    <div class="fb" data-bloco="As regras jurídicas">
+      <div class="fb-q">Alguma regra está errada ou incompleta?</div>
+      <textarea class="fb-txt" placeholder="Pode escrever do seu jeito. Se faltou alguma regra que você usa e eu não peguei, é aqui que ela entra."></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Três compromissos que o sistema assume com você
+  </div>
+
+  <div class="cols3">
+    <div class="card ok">
+      <h3><svg class="i sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Nada é escrito no Pipe</h3>
+      <div class="corpo">
+        <div class="cs" style="margin:0">O sistema só <b>lê</b> o PipeImob. Não anexa, não preenche, não muda status, não envia nada — nem para testar. Ele prepara o relatório e você lança. Se um dia quiser que ele lance sozinho, a decisão é sua.</div>
+      </div>
+    </div>
+    <div class="card ok">
+      <h3><svg class="i sm" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Nada é emitido sem você confirmar</h3>
+      <div class="corpo">
+        <div class="cs" style="margin:0">Emitir custa dinheiro. O sistema mostra o que encontrou e espera o seu clique. Quando estivermos seguros do acerto, você decide se libera a emissão direta.</div>
+      </div>
+    </div>
+    <div class="card ok">
+      <h3><svg class="i sm" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Caso com dúvida não fecha sozinho</h3>
+      <div class="corpo">
+        <div class="cs" style="margin:0">Se qualquer item ficar em dúvida, o parecer final não sai. O caso aparece como "você decide" e espera você. O sistema nunca dá um imóvel como apto por conta própria.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+    O que o sistema NÃO vai fazer nesta primeira versão
+  </div>
+
+  <div class="card no">
+    <div class="cs">Prefiro deixar claro agora do que você descobrir depois.</div>
+    <div class="corpo">
+      <ul class="lista y">
+        <li><b>A diligência da venda (DD2)</b> — empresas do proprietário, certidões dos antecessores e renovação do que venceu. Fica para depois.</li>
+        <li><b>TRF3, e-Proc e CEDI</b> continuam manuais. <span class="mini">O TRF3 depende da sua resposta, na pergunta 2 abaixo.</span></li>
+        <li><b>Buscar o contrato no Clicksign</b> quando o corretor não anexou — nesta versão o caso é só marcado como "contrato ausente".</li>
+        <li><b>Substituir o seu controle no Trello.</b> O sistema tem a própria fila de espera, mas não vou mexer no que você já usa.</li>
+        <li><b>Aviso por WhatsApp.</b> Por enquanto, o resumo aparece na tela do sistema.</li>
+      </ul>
+    </div>
+    <div class="fb" data-bloco="O que não entra nesta versão">
+      <div class="fb-q">Falta alguma coisa aqui que você considera essencial já na primeira versão?</div>
+      <textarea class="fb-txt" placeholder="Se algum desses itens for indispensável para você, me diga — dá para reordenar."></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+    As perguntas — cada uma com seu campo
+  </div>
+
+  <div class="cols2">
+    <div>
+      <div class="perg">
+        <div class="num">PERGUNTA 1 · fila do Pipe</div>
+        <div class="txt">A integração do Pipe já autentica, mas ainda não achamos o caminho que lista o estoque por status. Enquanto o suporte não responde: você pode exportar a planilha do filtro "em análise" e me mandar?</div>
+        <div class="pq">É a porta de entrada do mutirão. Sem ela, monto a lista à mão.</div>
+        <div class="fb" data-bloco="P1 - fila do Pipe">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 2 · TRF3</div>
+        <div class="txt">A Certidão Unificada não serviu, como o seu teste mostrou. Sobra o serviço do próprio TRF3, que é instável — sai em cerca de 1 a cada 5 tentativas —, mas a tentativa que falha <b>não é cobrada</b>. O sistema pode insistir sozinho até sair, sem custo extra. Você aceita, ou prefere continuar tirando à mão?</div>
+        <div class="fb" data-bloco="P2 - TRF3">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 3 · certidões novas</div>
+        <div class="txt">Na primeira venda analisada apareceram três que não estão na nossa lista: <b>CND Estadual (SEFAZ-SP)</b>, <b>FGTS/CRF</b> para empresas e o <b>relatório Serasa</b>. As duas primeiras têm caminho automático e funcionam bem — entram na DD1, na DD2, ou não entram? E o Serasa: usa sempre, além dos protestos do CENPROT? Substitui ou complementa?</div>
+        <div class="fb" data-bloco="P3 - certidões novas">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 4 · limites do alerta de HIS</div>
+        <div class="txt">Para o sistema levantar a bandeira sozinho, preciso dos números que você usa de cabeça: <b>até quantos metros quadrados</b> e <b>a partir de que ano</b> de empreendimento acende o sinal? Existe outro indício que você observa e não chegou a verbalizar?</div>
+        <div class="pq">Sem os limites, o alerta dispara demais ou de menos — e o "de menos" é o que já custou um negócio desfeito.</div>
+        <div class="fb" data-bloco="P4 - limites do HIS">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 5 · ordem do compilado</div>
+        <div class="txt">Você monta o PDF único na ordem dos documentos do CCV. Pode me mostrar um compilado já pronto, para eu reproduzir a ordem exatamente igual?</div>
+        <div class="fb" data-bloco="P5 - ordem do compilado">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 6 · pasta e nomes de arquivo</div>
+        <div class="txt">Qual é o nome exato de cada subpasta da sua pasta modelo e o que vai em cada uma? Como você nomeia a matrícula, o compilado e as certidões avulsas? E o Drive é da Studio 76 ou seu — o sistema pode gravar direto lá?</div>
+        <div class="fb" data-bloco="P6 - pasta e nomes">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="perg">
+        <div class="num">PERGUNTA 7 · mensagens padrão</div>
+        <div class="txt">Preciso do <b>texto exato</b> das três mensagens que você usa no relatório: a que avisa que nesta fase só olhou os titulares, a que orienta a ver o PDF da capa, e a de pendências. Quero que o sistema escreva igual, não parecido.</div>
+        <div class="fb" data-bloco="P7 - mensagens padrão">
+          <textarea class="fb-txt" placeholder="Pode colar os três textos aqui"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 8 · como quer ser avisado</div>
+        <div class="txt">Quando a rotina da madrugada terminar, como você prefere receber o resumo: por e-mail, ou basta a tela do sistema quando chegar?</div>
+        <div class="fb" data-bloco="P8 - como quer ser avisado">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 9 · data de captação × assinatura</div>
+        <div class="txt">Você ficou de conferir internamente: a data que aparece na lista do Pipe é a da captação ou a da assinatura do contrato?</div>
+        <div class="pq">É por ela que o mutirão decide o que atacar primeiro. Ordenar pela data errada faz o sistema começar pelos casos errados.</div>
+        <div class="fb" data-bloco="P9 - data de captação">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 10 · como confirmar as emissões</div>
+        <div class="txt">Você prefere confirmar <b>caso a caso</b> ou <b>aprovar um lote inteiro</b> de uma vez? No mutirão, aprovar de dez em dez pode poupar bastante tempo — mas quero o que for mais confortável para você.</div>
+        <div class="fb" data-bloco="P10 - forma de confirmação">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 11 · devolução ao corretor</div>
+        <div class="txt">Quando quem assinou não é o titular, ou falta a matrícula, o sistema prepara o texto de devolução. <b>Quem envia ao corretor — você, como hoje?</b> E o texto vai junto no relatório ou separado?</div>
+        <div class="fb" data-bloco="P11 - devolução ao corretor">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="perg">
+        <div class="num">PERGUNTA 12 · o painel</div>
+        <div class="txt">A primeira entrega será um <b>painel da fila</b>: quantos casos parados, quantos andando, quantos esperando certidão, quanto já se gastou. O que você gostaria de ver nessa tela logo de cara?</div>
+        <div class="pq">Essa parte não gasta nada, então dá para mostrar e ajustar quantas vezes for preciso.</div>
+        <div class="fb" data-bloco="P12 - o painel">
+          <textarea class="fb-txt" placeholder="Sua resposta"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/><path d="M12 2v13M8 6l4-4 4 4"/></svg>
+    Os três casos que quero testar com você
+  </div>
+
+  <div class="cols3">
+    <div class="caso">
+      <div class="cod">601301062-31 · casa</div>
+      <div class="end">Rua Nicolau Barreto, 552</div>
+      <div class="por">Captado em 15/05. <b>Por quê:</b> em casa a cadeia fecha inteira — é onde tudo deve funcionar do começo ao fim.</div>
+      <div class="dado">O sistema já achou o IPTU: <b>085.051.0015-8</b></div>
+    </div>
+    <div class="caso">
+      <div class="cod">601301058-69 · apartamento</div>
+      <div class="end">Rua Ytaipu, 98 — ap. 44</div>
+      <div class="por">Captado em 27/07. <b>Por quê:</b> é o caso mais recente da fila e o tipo mais comum — 205 dos 308 imóveis são apartamento.</div>
+      <div class="dado">O sistema já achou o IPTU: <b>045.120.0236-7</b> · prédio com 69 unidades</div>
+    </div>
+    <div class="caso">
+      <div class="cod">601301090-4 · dois proprietários</div>
+      <div class="end">Rua Dr. Gentil Leite Martins, 242 — ap. 12</div>
+      <div class="por">Captado em 24/06. <b>Por quê:</b> dois titulares, provável casal. É onde um erro seria grave — deixar de tirar certidão de um cônjuge.</div>
+      <div class="dado">Testa a regra dos <b>dois adquirentes no plural</b></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="fb" data-bloco="Os três casos de teste">
+      <div class="fb-q">Concorda com esses três casos?</div>
+      <textarea class="fb-txt" placeholder="Prefere outros? Podemos usá-los de verdade, com custo real (poucos reais no total)?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+    Qualquer outra coisa
+  </div>
+
+  <div class="card">
+    <div class="cs">Se lembrar de algo que não coube em nenhum bloco — uma ideia, uma preocupação, um detalhe do processo que eu não peguei — escreva aqui.</div>
+    <div class="fb" data-bloco="Livre">
+      <textarea class="fb-txt" placeholder="Escreva à vontade."></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Preparado por Alex Fontes · Pandora IA Soluções</span>
+    <span>Especificação da Due Diligence automática · RE/MAX Studio 76 · 29 de julho de 2026</span>
+  </div>
+
+</div>
+
+<script>
+const SB_URL='https://sobmjqounukzbplrmhkr.supabase.co';
+const SB_KEY='sb_publishable_o5fTXnmp8hhp76WymPJ_MQ_MuJUhvfY';
+const PAUTA='dd-requisitos-wilton';
+let sbc=null;
+try{ if(typeof supabase!=='undefined') sbc=supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.error(e); }
+
+let autor = localStorage.getItem('ddreq_autor') || null;
+const btns = document.querySelectorAll('.quem button');
+function pinta(){ btns.forEach(b=>b.classList.toggle('on', b.dataset.a===autor)); }
+btns.forEach(b=>b.addEventListener('click',()=>{
+  autor = (autor===b.dataset.a) ? null : b.dataset.a;
+  if(autor) localStorage.setItem('ddreq_autor',autor); else localStorage.removeItem('ddreq_autor');
+  pinta();
+}));
+pinta();
+
+document.querySelectorAll('.fb').forEach(fb=>{
+  fb.querySelector('.fb-send').addEventListener('click', async()=>{
+    const ta=fb.querySelector('.fb-txt'); const txt=ta.value.trim();
+    if(!txt){ ta.focus(); return; }
+    const send=fb.querySelector('.fb-send'); send.disabled=true; send.textContent='Enviando…';
+    try{
+      const {error}=await sbc.from('pauta_feedback').insert({
+        pauta:PAUTA, projeto:fb.dataset.bloco, avaliacao:autor||'nao_informado', comentario:txt
+      });
+      if(error) throw error;
+      fb.querySelectorAll('.fb-q,.fb-txt,.fb-send').forEach(x=>x.style.display='none');
+      fb.querySelector('.fb-done').style.display='flex';
+    }catch(e){ console.error(e); send.disabled=false; send.textContent='Não foi — tentar de novo'; }
+  });
+});
+</script>
+</body>
+</html>

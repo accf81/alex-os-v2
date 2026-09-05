@@ -1,0 +1,9 @@
+publicar.command
+.DS_Store
+
+# Trava de publicação (07/08/2026): a ficha da etapa e a porta são LOCAIS,
+# nunca publicadas. A ficha diz o que é desta etapa; a porta tem o caminho
+# da máquina do Alex.
+.trava/
+publicar.command.antes-da-trava
+deploy_github.command.antes-da-trava

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imóvel — ACM · Pandora OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="acm.css?v=8">
+</head>
+<body>
+<div class="app" data-passo="1" data-primario="Buscar vendas do prédio" data-sem-voltar="sim">
+  <div class="wrap">
+
+    <div class="head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+      <div>
+        <div class="h1">Qual imóvel vamos avaliar?</div>
+        <div class="sub">Comece pelo endereço — o sistema procura o edifício nos registros da Prefeitura sozinho</div>
+      </div>
+      <button class="btn btn-sm"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/></svg>Puxar de um imóvel já cadastrado</button>
+    </div>
+
+    <div class="grid3">
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-t">Endereço</span>
+          <span class="card-st">encontra o edifício</span>
+        </div>
+        <div class="card-bd">
+          <div class="fields">
+            <div class="f"><label>Rua</label><input value="Rua Cristiano Viana"></div>
+            <div class="fields" style="grid-template-columns:1fr 1fr;">
+              <div class="f"><label>Número</label><input value="279"></div>
+              <div class="f"><label>Apto</label><input value="112"></div>
+            </div>
+            <div class="f"><label>Bairro</label><input value="Pinheiros"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-t">O imóvel</span>
+          <span class="card-st">o que vai ser avaliado</span>
+        </div>
+        <div class="card-bd">
+          <div class="fields c3">
+            <div class="f"><label>Área útil (m²)</label><input value="156"></div>
+            <div class="f"><label>Dormitórios</label><input value="3"></div>
+            <div class="f"><label>Suítes</label><input value="1"></div>
+            <div class="f"><label>Banheiros</label><input value="2"></div>
+            <div class="f"><label>Vagas</label><input value="1"></div>
+            <div class="f"><label>Andar</label><input value="11"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-t">Situação</span>
+          <span class="card-st">define de qual grupo sai o alvo</span>
+        </div>
+        <div class="card-bd">
+          <div class="fields">
+            <div class="f">
+              <label>Tipologia</label>
+              <select><option>Apartamento</option><option>Cobertura</option><option>Casa</option></select>
+            </div>
+            <div class="f">
+              <label>Estado de conservação</label>
+              <select><option>Reformado</option><option>Original / a reformar</option><option>Novo</option><option>Não sei</option></select>
+              <span class="hint">pode ficar em branco — mas saber isso deixa a avaliação mais precisa</span>
+            </div>
+            <div class="f">
+              <label>Ocupação</label>
+              <select><option>Ocupado pelo proprietário</option><option>Alugado</option><option>Vazio</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note" style="margin-top:16px;">
+      <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+      <span style="flex:1;">
+        Encontramos este edifício nos registros da Prefeitura: <b>Edifício Villa Borghese</b> — 7 vendas registradas desde 2019.
+      </span>
+      <button class="lnk">Não é este edifício?</button>
+    </div>
+
+  </div>
+</div>
+<script src="casca.js?v=8"></script>
+</body>
+</html>

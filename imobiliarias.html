@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imobiliárias — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260728a">
+  <style>
+    /* ── Imobiliárias (Etapa 1 da reforma, mockup-imobiliarias.html aprovado) ── */
+    .contacts-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    .contacts-toolbar input{max-width:340px}
+    .filtro-redes{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .filtro-lbl{font-size:11px;color:var(--muted);font-weight:600;margin-right:2px}
+    .fpill{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:.15s}
+    .fpill:hover{color:var(--text)}
+    .fpill.on{border-color:var(--accent);background:var(--accent-pale);color:var(--accent)}
+    .contacts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;align-items:start}
+    /* Card de altura ÚNICA: cada elemento tem espaço reservado, mesmo vazio */
+    .contact-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:border-color .15s,background .15s;min-height:150px}
+    .contact-card:hover{border-color:var(--accent);background:var(--surface2)}
+    .contact-avatar{width:40px;height:40px;border-radius:10px;background:var(--accent-pale);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .contact-avatar svg{width:21px;height:21px}
+    .contact-info{flex:1;min-width:0;display:flex;flex-direction:column;height:100%}
+    .contact-name{font-weight:600;font-size:14px;margin-bottom:5px;display:flex;align-items:center;gap:8px;min-width:0}
+    .contact-name .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .contact-sub{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;min-width:0;height:18px;margin-bottom:8px}
+    .contact-sub svg{width:13px;height:13px;stroke:var(--muted);flex-shrink:0}
+    .contact-sub span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .contact-eq{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;height:18px;margin-top:auto}  /* sempre presente; vazio quando não há equipe */
+    .contact-eq svg{width:13px;height:13px;stroke:var(--muted);flex-shrink:0}
+    .rede-badge{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;border:1px solid;flex-shrink:0}
+    .rede-indep{color:var(--muted);border-color:var(--border);background:var(--surface2)}
+    /* Fileira de links — SEMPRE os 4; sem dado = "apagado" */
+    .link-row{display:flex;gap:8px;margin-bottom:10px}
+    .lnk{width:38px;height:38px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:.15s;flex-shrink:0}
+    .lnk svg{width:19px;height:19px;stroke:var(--muted);fill:none}
+    .lnk:hover{border-color:currentColor}
+    .lnk.ig:hover{color:#e1306c}.lnk.ig:hover svg{stroke:#e1306c}
+    .lnk.wa{color:#25d366}.lnk.wa svg{stroke:#25d366}.lnk.wa:hover{border-color:#25d366;background:rgba(37,211,102,.12)}
+    .lnk.web:hover{color:var(--info)}.lnk.web:hover svg{stroke:var(--info)}
+    .lnk.mail:hover{color:var(--accent)}.lnk.mail:hover svg{stroke:var(--accent)}
+    .lnk.off{opacity:.28;cursor:default;pointer-events:none;background:transparent}
+    .lnk.off svg{stroke:var(--muted)}
+    /* Chips de bairros (modal) */
+    .chips-field{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;position:relative}
+    .chips-field:focus-within{border-color:var(--accent)}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-pale);color:var(--accent);font-size:12px;font-weight:600;padding:3px 8px;border-radius:20px}
+    .chip .x{cursor:pointer;font-size:14px;line-height:1;opacity:.8}
+    .chip .x:hover{opacity:1}
+    .chips-field input{border:none;background:transparent;flex:1;min-width:120px;padding:4px 2px;width:auto;box-shadow:none}
+    .ac-drop{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-card);max-height:200px;overflow-y:auto;z-index:20;display:none}
+    .ac-drop.show{display:block}
+    .ac-item{padding:8px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px}
+    .ac-item svg{width:13px;height:13px;stroke:var(--muted);flex-shrink:0}
+    .ac-item:hover,.ac-item.hl{background:var(--surface2)}
+    .ac-item .add-tag{margin-left:auto;font-size:11px;color:var(--accent)}
+    /* Modal */
+    input.err{border-color:var(--danger)}
+    .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px}
+    .modal-close:hover{color:var(--text)}
+    .form-group{margin-bottom:12px}
+    .form-group label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+    .field-hint{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+    .rede-add-row{display:none;gap:8px;margin-top:8px}
+    .rede-add-row.show{display:flex}
+    /* Ficha (Tela 1.4) — o voltar agora é o .btn-back do design system (css/base.css) */
+    .ficha-head{border:1px solid transparent;border-radius:12px;padding:20px;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--edge) border-box;box-shadow:var(--shadow-card);margin-bottom:16px}
+    .fh-row{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+    .fh-ava{width:56px;height:56px;border-radius:14px;background:var(--accent-pale);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .fh-ava svg{width:30px;height:30px}
+    .fh-main{flex:1;min-width:220px}
+    .fh-name{font-family:var(--font-brand);font-size:22px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .fh-bairros{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+    .fh-bairro{font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:2px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px}
+    .fh-bairro svg{width:11px;height:11px;stroke:var(--muted)}
+    .fh-meta{display:flex;gap:24px;flex-wrap:wrap;margin-top:14px}
+    .fh-meta .m-lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+    .fh-meta .m-val{font-size:13px}
+    .fh-obs{margin-top:14px;font-size:13px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px}
+    .fh-side{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+    .sec-title{font-family:var(--font-brand);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;margin:22px 0 12px}
+    .sec-title svg{width:15px;height:15px;stroke:var(--muted)}
+    .sec-title .cnt{color:var(--accent)}
+    .sec-title .sp{flex:1}
+    .equipe-card{border:1px solid transparent;border-radius:10px;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--edge) border-box;box-shadow:var(--shadow-card);overflow:hidden}
+    .eq-row{display:flex;align-items:center;gap:12px;padding:12px 16px}
+    .eq-row+.eq-row{border-top:1px solid var(--border)}
+    .eq-ava{width:34px;height:34px;border-radius:50%;background:var(--surface3);color:var(--muted);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+    .eq-info{flex:1;min-width:0}
+    .eq-nome{font-weight:600;font-size:13.5px}
+    .eq-contact{font-size:11.5px;color:var(--muted)}
+    .papel-badge{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;flex-shrink:0}
+    .eq-del{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;opacity:.5;transition:.15s}
+    .eq-del:hover{opacity:1;color:var(--danger)}
+    .eq-del svg{width:15px;height:15px;stroke:currentColor}
+    /* Vincular — busca de pessoa */
+    .pick-list{border:1px solid var(--border);border-radius:8px;max-height:210px;overflow-y:auto;margin-top:6px}
+    .pick-item{padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:9px}
+    .pick-item+.pick-item{border-top:1px solid var(--border)}
+    .pick-item:hover{background:var(--surface2)}
+    .pick-item.sel{background:var(--accent-pale)}
+    .pick-item .pi-ava{width:28px;height:28px;border-radius:50%;background:var(--surface3);color:var(--muted);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+    .pick-empty{padding:16px;text-align:center;color:var(--muted);font-size:12.5px}
+    .empty-state.small{padding:34px 20px}
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260728a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Imobiliárias</span>
+    <div class="sb-topbar-right">
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ Nova imobiliária</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div id="viewList">
+      <div class="contacts-toolbar">
+        <input type="text" id="searchInput" placeholder="Buscar por nome, bairro ou telefone..." oninput="render()">
+        <div class="filtro-redes" id="filtroRedes"></div>
+      </div>
+      <div id="conteudo"><div class="loading"><div class="spinner"></div> Carregando...</div></div>
+    </div>
+    <div id="viewFicha" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── Modal Nova/Editar Imobiliária ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:540px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modalTitulo">Nova imobiliária</div>
+      <button class="modal-close" onclick="fecharModal()">×</button>
+    </div>
+    <!-- Erro que não é de campo (falhou gravar): faixa no topo da janela -->
+    <div class="modal-error-bar" id="errTopo" role="alert"></div>
+
+    <div class="form-group">
+      <label>Nome *</label>
+      <input type="text" id="fNome" placeholder="Ex.: Mosaic" oninput="limparErroNome()">
+      <div class="field-hint">Só o nome limpo, sem a rede junto (a rede fica no campo abaixo).</div>
+      <!-- Aviso de validação junto do campo (padrão do sistema) -->
+      <div class="field-error" id="errNome" role="alert"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Rede</label>
+      <select id="fRede" onchange="onRedeChange()"></select>
+      <div class="rede-add-row" id="redeAddRow">
+        <input type="text" id="fRedeNova" placeholder="Nome da nova rede" oninput="limparErroRede()" onkeydown="if(event.key==='Enter')addRede()">
+        <button class="btn btn-primary btn-sm" onclick="addRede()">Adicionar</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelRede()">Cancelar</button>
+      </div>
+      <div class="field-error" id="errRede" role="alert"></div>
+      <div class="field-hint">Em branco = imobiliária independente. Lista editável: dá para adicionar redes novas.</div>
+    </div>
+
+    <div class="form-row cols-2">
+      <!-- máscara de telefone: aplicada automaticamente por js/masks.js (id contém "Tel") —
+           NÃO chamar fmtTelInput aqui: essa função mora em js/imoveis/core.js, que esta página não carrega. -->
+      <div class="form-group"><label>Telefone</label><input type="tel" id="fTel" placeholder="(11) 9 9999-9999"></div>
+      <div class="form-group"><label>E-mail</label><input type="email" id="fEmail" placeholder="contato@imobiliaria.com"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Instagram</label><input type="text" id="fInsta" placeholder="@imobiliaria"></div>
+      <div class="form-group"><label>Site</label><input type="text" id="fSite" placeholder="www.imobiliaria.com.br"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Bairros / regiões de atuação</label>
+      <div class="chips-field" id="bairrosField" onclick="document.getElementById('bairroInput').focus()">
+        <input type="text" id="bairroInput" placeholder="Digite um bairro..." autocomplete="off"
+               oninput="acFilter()" onkeydown="acKey(event)" onblur="setTimeout(acClose,150)">
+        <div class="ac-drop" id="acDrop"></div>
+      </div>
+      <div class="field-hint">Escolha do cadastro de Bairros. Não achou? "＋ novo bairro" cria o registro no cadastro na hora.</div>
+    </div>
+
+    <div class="form-group">
+      <label>CRECI da empresa</label>
+      <input type="text" id="fCreci" placeholder="CRECI jurídico">
+    </div>
+    <div class="form-group">
+      <label>Observações</label>
+      <textarea id="fObs" rows="3" placeholder="Notas sobre a imobiliária..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnDel" onclick="excluir()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnSalvar" onclick="salvar()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Vincular pessoa (existente) ── -->
+<div class="modal-overlay" id="vincOverlay" onclick="fecharVinc()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="modal-hdr">
+      <div class="modal-title">Vincular pessoa à equipe</div>
+      <button class="modal-close" onclick="fecharVinc()">×</button>
+    </div>
+    <div class="form-group">
+      <label>Pessoa (já cadastrada)</label>
+      <input type="text" id="vincBusca" placeholder="Buscar pessoa pelo nome..." oninput="renderPick()" autocomplete="off">
+      <div class="field-hint">Liga alguém que já existe em Pessoas. Para criar uma pessoa nova, use o cadastro de Pessoas.</div>
+      <div class="field-error" id="errVinc" role="alert"></div>
+      <div class="pick-list" id="pickList"></div>
+    </div>
+    <div class="form-group">
+      <label>Papel na imobiliária</label>
+      <select id="vincPapel"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="fecharVinc()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnVincular" onclick="confirmarVinc()">Vincular</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script src="js/masks.js?v=20260729a"></script>
+<script src="js/listas.js?v=20260728a"></script>
+<script>
+// ── Estado ──────────────────────────────────────────────────────────────────
+let imobs      = [];   // imobiliarias
+let imobBairros = [];  // imobiliaria_bairros (vínculos)
+let imobPessoas = [];  // imobiliaria_pessoas (vínculos)
+let bairrosAll  = [];  // cadastro de bairros
+let pessoasAll  = [];  // cadastro de pessoas
+let editId = null, fichaId = null, filtroRede = null;
+let salvando = false, vinculando = false;   // guardas anti-duplo-clique
+let bairrosSel = [], acHl = -1, _criandoBairro = false;
+let vincImobId = null, pickSel = null;
+
+const REDE_COR_BASE = { 'Pilar':'#ff6600', 'RE/MAX':'#3b82f6' };
+const CORES_EXTRA = ['#8b5cf6','#14b8a6','#eab308','#ec4899','#22c55e','#f59e0b'];
+const PAPEL_COR = { 'Corretor':'#ff6600','Advogado':'#3b82f6','Recepção':'#22c55e','Marketing':'#8b5cf6','Sócio':'#f59e0b','Gerente':'#14b8a6' };
+
+// ── Ícones (padrão stroke do sistema) ────────────────────────────────────────
+const ICO_BUILDING='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V11l5-3v13M14 21V6l5 3v12M9 9v.01M9 13v.01M9 17v.01"/></svg>';
+const ICO_PIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+const ICO_USERS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>';
+const ICO_IG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>';
+const ICO_WA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+const ICO_WEB='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+const ICO_MAIL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
+const ICO_BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
+const ICO_EDIT='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>';
+const ICO_USERPLUS='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>';
+const ICO_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+const ICO_WARN='<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+const ICO_SEARCH='<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+
+const TOAST_ICO = {
+  '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+  '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  '🗑️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7a7d82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>'
+};
+TOAST_ICO['⚠'] = TOAST_ICO['⚠️']; TOAST_ICO['🗑'] = TOAST_ICO['🗑️'];
+function toast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  let icon = '', text = String(msg == null ? '' : msg);
+  for (const k in TOAST_ICO) { if (text.indexOf(k) === 0) { icon = TOAST_ICO[k]; text = text.slice(k.length).trim(); break; } }
+  t.innerHTML = icon + '<span style="vertical-align:middle">' + text.replace(/</g,'&lt;') + '</span>';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return esc(s).replace(/"/g,'&quot;'); }
+function normTxt(s) { return String(s == null ? '' : s).trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
+// ── Aviso de validação junto do campo (padrão do sistema, mockup-aviso-no-campo) ──
+// Conteúdo montado por textContent/DOM — texto digitado nunca vira HTML nem código
+// (lição do defeito D-1). `partes` = lista de strings e nós prontos.
+const ICO_ERR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+function fieldErrMostrar(inpId, boxId, partes) {
+  const inp = document.getElementById(inpId), box = document.getElementById(boxId);
+  if (!box) return;
+  if (inp) inp.classList.add('err');
+  box.innerHTML = ICO_ERR;
+  const sp = document.createElement('span');
+  partes.forEach(p => sp.appendChild(typeof p === 'string' ? document.createTextNode(p) : p));
+  box.appendChild(sp);
+  box.classList.add('show');
+  if (inp) inp.focus();
+  if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function fieldErrLimpar(inpId, boxId) {
+  const inp = document.getElementById(inpId); if (inp) inp.classList.remove('err');
+  const box = document.getElementById(boxId); if (box) { box.classList.remove('show'); box.innerHTML = ''; }
+}
+function feLink(txt, acao) {
+  const a = document.createElement('span');
+  a.className = 'fe-link'; a.textContent = txt;
+  a.addEventListener('click', acao);
+  return a;
+}
+function limparErroNome() { fieldErrLimpar('fNome', 'errNome'); }
+function limparErroRede() { fieldErrLimpar('fRedeNova', 'errRede'); }
+function errTopoMostrar(msg) {
+  const bar = document.getElementById('errTopo'); if (!bar) { toast('❌ ' + msg); return; }
+  bar.innerHTML = ICO_ERR;
+  const sp = document.createElement('span');
+  sp.appendChild(document.createTextNode('Não deu para salvar agora — ' + msg + ' '));
+  sp.appendChild(feLink('Tentar de novo', () => { errTopoLimpar(); salvar(); }));
+  bar.appendChild(sp);
+  bar.classList.add('show');
+}
+function errTopoLimpar() { const bar = document.getElementById('errTopo'); if (bar) { bar.classList.remove('show'); bar.innerHTML = ''; } }
+const waDigits = tel => '55' + (tel || '').replace(/\D/g, '');
+const inicial  = n => (n || '?').trim().charAt(0).toUpperCase();
+function bairroById(id) { return bairrosAll.find(b => b.id === id); }
+function pessoaById(id) { return pessoasAll.find(p => p.id === id); }
+function bairrosDe(imobId) {
+  return imobBairros.filter(v => v.imobiliaria_id === imobId)
+    .map(v => bairroById(v.bairro_id)).filter(Boolean)
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+}
+function equipeDe(imobId) {
+  return imobPessoas.filter(v => v.imobiliaria_id === imobId)
+    .map(v => ({ ...v, pessoa: pessoaById(v.pessoa_id) })).filter(e => e.pessoa)
+    .sort((a, b) => a.pessoa.nome.localeCompare(b.pessoa.nome, 'pt'));
+}
+function redes() {
+  // redes da lista editável + redes que já existem nos dados (novas entram sozinhas no filtro)
+  const set = [];
+  opcoesDe('rede_imobiliaria').forEach(r => { if (!set.includes(r)) set.push(r); });
+  imobs.forEach(i => { if (i.rede && !set.includes(i.rede)) set.push(i.rede); });
+  return set;
+}
+function redeCor(r) {
+  if (REDE_COR_BASE[r]) return REDE_COR_BASE[r];
+  const idx = redes().indexOf(r);
+  return CORES_EXTRA[Math.abs(idx) % CORES_EXTRA.length] || '#8b5cf6';
+}
+function redeBadge(i) {
+  if (!i.rede) return '<span class="rede-badge rede-indep">Independente</span>';
+  const c = redeCor(i.rede);
+  return `<span class="rede-badge" style="color:${c};border-color:${c}">${esc(i.rede)}</span>`;
+}
+
+// ── Init / carregar ──────────────────────────────────────────────────────────
+async function init() {
+  await initSupabase();
+  await Promise.all([carregarOpcoes(), carregarTudo()]);
+  renderFiltros();
+  render();
+}
+async function carregarTudo() {
+  const [ri, rb, rvb, rvp, rp] = await Promise.all([
+    db().from('imobiliarias').select('*').order('nome'),
+    db().from('bairros').select('*').order('nome'),
+    db().from('imobiliaria_bairros').select('*'),
+    db().from('imobiliaria_pessoas').select('*'),
+    db().from('pessoas').select('id,nome,tel,email,tipos').order('nome'),
+  ]);
+  const err = ri.error || rb.error || rvb.error || rvp.error || rp.error;
+  if (err) throw err;
+  imobs = ri.data || []; bairrosAll = rb.data || [];
+  imobBairros = rvb.data || []; imobPessoas = rvp.data || []; pessoasAll = rp.data || [];
+}
+
+// ══ LISTA ═════════════════════════════════════════════════════════════════════
+// As pílulas de rede são montadas por JS e o clique é ligado por addEventListener,
+// com o valor guardado numa variável (closure). NUNCA interpolar texto digitado pelo
+// Alex dentro de um onclick="…": nome com apóstrofo (O'Brien) partia o comando e
+// deixava a pílula morta — e abria porta para código injetado. Ver 05_QA.md, defeito D-1.
+function renderFiltros() {
+  const el = document.getElementById('filtroRedes');
+  el.innerHTML = '<span class="filtro-lbl">Rede:</span>';
+  const pilula = (rotulo, valor, ligada) => {
+    const s = document.createElement('span');
+    s.className = 'fpill' + (ligada ? ' on' : '');
+    s.textContent = rotulo;                    // textContent: o texto nunca vira HTML nem código
+    s.addEventListener('click', () => setFiltro(valor));
+    el.appendChild(s);
+  };
+  pilula('Todas', null, !filtroRede);
+  redes().forEach(r => pilula(r, r, filtroRede === r));
+}
+function setFiltro(r) { filtroRede = (filtroRede === r ? null : r); renderFiltros(); render(); }
+
+function render() {
+  const el = document.getElementById('conteudo');
+  if (!imobs.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">${ICO_BUILDING.replace('<svg','<svg width="40" height="40"')}</div>
+      <p class="empty-state-title">Nenhuma imobiliária cadastrada ainda</p>
+      <p class="empty-state-hint">Cadastre imobiliárias para vincular a equipe e filtrar por rede.</p>
+      <p style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="openModal()">+ Nova imobiliária</button></p></div>`;
+    return;
+  }
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  let lista = imobs.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));   // ordem alfabética
+  if (q) lista = lista.filter(i =>
+    i.nome.toLowerCase().includes(q) ||
+    bairrosDe(i.id).map(b => b.nome).join(' ').toLowerCase().includes(q) ||
+    (i.telefone || '').includes(q));
+  if (filtroRede) lista = lista.filter(i => i.rede === filtroRede);
+  if (!lista.length) {
+    const msg = filtroRede ? `Nenhuma imobiliária na rede "${esc(filtroRede)}".` : 'Nenhuma imobiliária encontrada.';
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">${ICO_SEARCH}</div>
+      <p class="empty-state-title">${msg}</p><p class="empty-state-hint">Ajuste a busca ou o filtro de rede.</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="contacts-grid">${lista.map(cardHTML).join('')}</div>`;
+}
+
+/* Links do CARD: SEMPRE os 4; o que não existe fica "apagado" (mantém a fileira igual) */
+function cardLinksHTML(i) {
+  const on  = (cls, href, title, ico) => `<a class="lnk ${cls}" title="${title}" target="_blank" href="${href}" onclick="event.stopPropagation()">${ico}</a>`;
+  const off = (cls, title, ico) => `<span class="lnk ${cls} off" title="Sem ${title}">${ico}</span>`;
+  return (i.instagram ? on('ig', `https://instagram.com/${esc(i.instagram.replace('@',''))}`, 'Instagram', ICO_IG) : off('ig', 'Instagram', ICO_IG))
+       + (i.telefone  ? on('wa', `https://wa.me/${waDigits(i.telefone)}`, 'WhatsApp', ICO_WA) : off('wa', 'WhatsApp', ICO_WA))
+       + (i.site      ? on('web', `https://${esc(i.site.replace(/^https?:\/\//,''))}`, 'Site', ICO_WEB) : off('web', 'site', ICO_WEB))
+       + (i.email     ? on('mail', `mailto:${esc(i.email)}`, 'E-mail', ICO_MAIL) : off('mail', 'e-mail', ICO_MAIL));
+}
+/* Card de tamanho ÚNICO: 2 bairros + "+N"; 4 ícones fixos; contador de equipe sempre presente */
+function cardHTML(i) {
+  const bs = bairrosDe(i.id).map(b => b.nome);
+  let bairro = bs.length ? bs.slice(0, 2).join(' · ') : 'Sem bairro definido';
+  if (bs.length > 2) bairro += '  +' + (bs.length - 2);
+  const nEq = equipeDe(i.id).length;
+  return `<div class="contact-card" onclick="showFicha('${i.id}')">
+    <div class="contact-avatar">${ICO_BUILDING}</div>
+    <div class="contact-info">
+      <div class="contact-name"><span class="nm">${esc(i.nome)}</span>${redeBadge(i)}</div>
+      <div class="contact-sub">${ICO_PIN}<span>${esc(bairro)}</span></div>
+      <div class="link-row">${cardLinksHTML(i)}</div>
+      <div class="contact-eq">${nEq ? ICO_USERS + '<span>' + nEq + (nEq === 1 ? ' pessoa' : ' pessoas') + ' na equipe</span>' : ''}</div>
+    </div>
+  </div>`;
+}
+
+// ══ FICHA (Tela 1.4) ══════════════════════════════════════════════════════════
+// Voltar preserva busca, filtro e rolagem da lista (padrão do botão voltar aprovado):
+// a lista fica só escondida (inputs intactos) e a rolagem é guardada/restaurada.
+let _listScroll = 0;
+function _pageEl() { return document.querySelector('.page'); }
+function crumbLista() {
+  if (window.alexSetCrumbTrail) window.alexSetCrumbTrail([
+    { label: 'Pandora', href: 'imoveis.html' }, { label: 'Cadastros' }, { label: 'Imobiliárias' }]);
+}
+function showList() {
+  fichaId = null;
+  document.getElementById('viewFicha').style.display = 'none';
+  document.getElementById('viewList').style.display = '';
+  crumbLista();
+  render();
+  const pg = _pageEl(); if (pg) pg.scrollTop = _listScroll;
+}
+function showFicha(id) {
+  const i = imobs.find(x => x.id === id); if (!i) return;
+  fichaId = id;
+  const pg = _pageEl(); if (pg) _listScroll = pg.scrollTop;
+  document.getElementById('viewList').style.display = 'none';
+  document.getElementById('viewFicha').style.display = '';
+  // Trilha do topo clicável em todos os níveis; o nome entra por textContent
+  if (window.alexSetCrumbTrail) window.alexSetCrumbTrail([
+    { label: 'Pandora', href: 'imoveis.html' }, { label: 'Cadastros' },
+    { label: 'Imobiliárias', onclick: showList }, { label: i.nome }]);
+  renderFicha(i);
+  if (pg) pg.scrollTop = 0;
+}
+// Esc faz o mesmo que o botão voltar (padrão aprovado) — mas nunca por cima de um modal aberto
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.querySelector('.modal-overlay.open')) return;
+  if (fichaId) { e.preventDefault(); showList(); }
+});
+/* Links da FICHA: só os que existem */
+function linksHTML(i) {
+  let h = '';
+  if (i.instagram) h += `<a class="lnk ig" title="Instagram" target="_blank" href="https://instagram.com/${esc(i.instagram.replace('@',''))}">${ICO_IG}</a>`;
+  if (i.telefone)  h += `<a class="lnk wa" title="WhatsApp" target="_blank" href="https://wa.me/${waDigits(i.telefone)}">${ICO_WA}</a>`;
+  if (i.site)      h += `<a class="lnk web" title="Site" target="_blank" href="https://${esc(i.site.replace(/^https?:\/\//,''))}">${ICO_WEB}</a>`;
+  if (i.email)     h += `<a class="lnk mail" title="E-mail" href="mailto:${esc(i.email)}">${ICO_MAIL}</a>`;
+  return h;
+}
+function renderFicha(i) {
+  const v = document.getElementById('viewFicha');
+  const bairros = bairrosDe(i.id).map(b => `<span class="fh-bairro">${ICO_PIN}${esc(b.nome)}</span>`).join('')
+    || '<span class="fh-bairro" style="opacity:.6">Sem bairro definido</span>';
+  const links = linksHTML(i);
+  const meta = [];
+  if (i.telefone) meta.push(`<div><div class="m-lbl">Telefone</div><div class="m-val">${esc(i.telefone)}</div></div>`);
+  if (i.email)    meta.push(`<div><div class="m-lbl">E-mail</div><div class="m-val">${esc(i.email)}</div></div>`);
+  if (i.creci)    meta.push(`<div><div class="m-lbl">CRECI da empresa</div><div class="m-val">${esc(i.creci)}</div></div>`);
+
+  // Botão voltar padrão do sistema (.btn-back, mockup-botao-voltar.html aprovado):
+  // <button> de verdade (Tab + Enter/Espaço + foco laranja), chevron 16px, rótulo do destino
+  let h = `<div class="ficha-btn-back-top"><button type="button" class="btn-back" onclick="showList()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span class="bb-txt">Imobiliárias</span></button></div>`;
+  h += `<div class="ficha-head"><div class="fh-row">
+      <div class="fh-ava">${ICO_BUILDING}</div>
+      <div class="fh-main">
+        <div class="fh-name">${esc(i.nome)}${redeBadge(i)}</div>
+        <div class="fh-bairros">${bairros}</div>
+        ${meta.length ? `<div class="fh-meta">${meta.join('')}</div>` : ''}
+        ${i.obs ? `<div class="fh-obs">${esc(i.obs)}</div>` : ''}
+      </div>
+      <div class="fh-side">
+        <button class="btn btn-primary btn-sm" onclick="openModal('${i.id}')">${ICO_EDIT}Editar</button>
+        ${links ? `<div class="link-row" style="margin-bottom:0">${links}</div>` : ''}
+      </div>
+    </div></div>`;
+
+  const equipe = equipeDe(i.id);
+  h += `<div class="sec-title">${ICO_USERS}Equipe <span class="cnt">${equipe.length ? '(' + equipe.length + ')' : ''}</span><span class="sp"></span>
+    <button class="btn btn-primary btn-sm" onclick="abrirVinc('${i.id}')">${ICO_USERPLUS}Vincular pessoa</button></div>`;
+
+  if (!equipe.length) {
+    h += `<div class="equipe-card"><div class="empty-state small"><div class="es-icon">${ICO_USERS.replace('<svg','<svg width="40" height="40"')}</div>
+      <p class="empty-state-title">Nenhuma pessoa vinculada ainda</p>
+      <p class="empty-state-hint">Use "Vincular pessoa" para ligar corretores, advogado, recepção etc. — quem já existe em Pessoas.</p></div></div>`;
+  } else {
+    h += `<div class="equipe-card">` + equipe.map(e => {
+      const p = e.pessoa;
+      const c = PAPEL_COR[e.papel] || '#8a9099';
+      const contato = [p.tel, p.email].filter(Boolean).join('  ·  ');
+      return `<div class="eq-row">
+        <div class="eq-ava">${inicial(p.nome)}</div>
+        <div class="eq-info"><div class="eq-nome">${esc(p.nome)}</div>${contato ? `<div class="eq-contact">${esc(contato)}</div>` : ''}</div>
+        ${e.papel ? `<span class="papel-badge" style="color:${c};border-color:${c}">${esc(e.papel)}</span>` : ''}
+        <button class="eq-del" title="Remover vínculo" onclick="removerVinc('${e.id}')">${ICO_X}</button>
+      </div>`;
+    }).join('') + `</div>`;
+  }
+  v.innerHTML = h;
+}
+
+// ── Vincular pessoa (só quem já existe em Pessoas) ───────────────────────────
+function abrirVinc(imobId) {
+  vincImobId = imobId; pickSel = null; vinculando = false;
+  document.getElementById('vincBusca').value = '';
+  const sel = document.getElementById('vincPapel');
+  const papeis = opcoesDe('papel_imobiliaria');
+  sel.innerHTML = (papeis.length ? papeis : ['Corretor']).map(p => `<option>${esc(p)}</option>`).join('');
+  renderPick();
+  document.getElementById('vincOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('vincBusca').focus(), 50);
+}
+function fecharVinc() { document.getElementById('vincOverlay').classList.remove('open'); }
+function renderPick() {
+  fieldErrLimpar('vincBusca', 'errVinc');
+  const q = (document.getElementById('vincBusca').value || '').toLowerCase().trim();
+  const jaLig = new Set(imobPessoas.filter(v => v.imobiliaria_id === vincImobId).map(v => v.pessoa_id));
+  let lista = pessoasAll.filter(p => !jaLig.has(p.id));
+  if (q) lista = lista.filter(p => (p.nome || '').toLowerCase().includes(q));
+  const el = document.getElementById('pickList');
+  if (!lista.length) { el.innerHTML = '<div class="pick-empty">Ninguém encontrado. (Pessoa nova se cria no cadastro de Pessoas.)</div>'; return; }
+  el.innerHTML = lista.slice(0, 20).map(p => `<div class="pick-item ${pickSel === p.id ? 'sel' : ''}" onclick="pickSel='${p.id}';renderPick()">
+    <div class="pi-ava">${inicial(p.nome)}</div><div>${esc(p.nome)}${p.tel ? ` <span style="color:var(--muted);font-size:11px">· ${esc(p.tel)}</span>` : ''}</div></div>`).join('');
+}
+async function confirmarVinc() {
+  if (vinculando) return;
+  if (!pickSel) { fieldErrMostrar('vincBusca', 'errVinc', ['Escolha uma pessoa da lista para poder vincular.']); return; }
+  vinculando = true;
+  const btn = document.getElementById('btnVincular'); btn.style.opacity = '.6';
+  try {
+    const papel = document.getElementById('vincPapel').value || null;
+    const { error } = await db().from('imobiliaria_pessoas').insert({ imobiliaria_id: vincImobId, pessoa_id: pickSel, papel });
+    if (error) { toast(error.code === '23505' ? '⚠️ Essa pessoa já está vinculada com esse papel' : '❌ ' + error.message); return; }
+    const nome = (pessoaById(pickSel) || {}).nome || 'Pessoa';
+    fecharVinc();
+    await recarregarVinculos();
+    const i = imobs.find(x => x.id === vincImobId);
+    if (i && fichaId === i.id) renderFicha(i);
+    toast('✅ ' + nome + ' vinculado(a) à equipe');
+  } finally { vinculando = false; btn.style.opacity = '1'; }
+}
+async function removerVinc(vincId) {
+  const v = imobPessoas.find(x => x.id === vincId); if (!v) return;
+  const nome = (pessoaById(v.pessoa_id) || {}).nome || 'pessoa';
+  if (!confirm('Remover ' + nome + ' da equipe?\n\nA pessoa NÃO é apagada — só deixa de estar vinculada a esta imobiliária.')) return;
+  const { error } = await db().from('imobiliaria_pessoas').delete().eq('id', vincId);
+  if (error) { toast('❌ ' + error.message); return; }
+  await recarregarVinculos();
+  const i = imobs.find(x => x.id === v.imobiliaria_id);
+  if (i && fichaId === i.id) renderFicha(i);
+  toast('🗑️ Vínculo removido');
+}
+async function recarregarVinculos() {
+  const [rvb, rvp] = await Promise.all([
+    db().from('imobiliaria_bairros').select('*'),
+    db().from('imobiliaria_pessoas').select('*'),
+  ]);
+  if (!rvb.error) imobBairros = rvb.data || [];
+  if (!rvp.error) imobPessoas = rvp.data || [];
+}
+
+// ══ MODAL criar/editar ════════════════════════════════════════════════════════
+function openModal(id) {
+  editId = (typeof id === 'string') ? id : null;
+  const i = editId ? imobs.find(x => x.id === editId) : null;
+  document.getElementById('modalTitulo').textContent = i ? 'Editar imobiliária' : 'Nova imobiliária';
+  document.getElementById('fNome').value = i?.nome || '';
+  limparErroNome(); limparErroRede(); errTopoLimpar();
+  syncRedeOptions();
+  document.getElementById('fRede').value = i?.rede || '';
+  document.getElementById('fTel').value = i?.telefone || '';
+  document.getElementById('fEmail').value = i?.email || '';
+  document.getElementById('fInsta').value = i?.instagram || '';
+  document.getElementById('fSite').value = i?.site || '';
+  document.getElementById('fCreci').value = i?.creci || '';
+  document.getElementById('fObs').value = i?.obs || '';
+  bairrosSel = i ? bairrosDe(i.id).map(b => b.id) : [];
+  renderChips();
+  document.getElementById('bairroInput').value = '';
+  cancelRede();
+  document.getElementById('btnDel').style.display = i ? '' : 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fNome').focus(), 50);
+}
+function fecharModal() { document.getElementById('modalOverlay').classList.remove('open'); editId = null; acClose(); }
+
+// ── Rede (lista editável + "＋ Nova rede" inline) ─────────────────────────────
+function syncRedeOptions(selecionada) {
+  const cur = selecionada != null ? selecionada : (document.getElementById('fRede').value || '');
+  document.getElementById('fRede').innerHTML = '<option value="">— Independente (sem rede) —</option>'
+    + redes().map(r => `<option${r === cur ? ' selected' : ''}>${esc(r)}</option>`).join('')
+    + '<option value="__nova">＋ Nova rede…</option>';
+}
+function onRedeChange() {
+  const s = document.getElementById('fRede');
+  if (s.value === '__nova') { document.getElementById('redeAddRow').classList.add('show'); document.getElementById('fRedeNova').focus(); }
+  else document.getElementById('redeAddRow').classList.remove('show');
+}
+async function addRede() {
+  const v = document.getElementById('fRedeNova').value.trim();
+  limparErroRede();
+  if (!v) { fieldErrMostrar('fRedeNova', 'errRede', ['Escreva o nome da rede para poder adicionar.']); return; }
+  const jaTem = redes().find(r => normTxt(r) === normTxt(v));
+  if (jaTem) {
+    const b = document.createElement('b'); b.textContent = jaTem;
+    fieldErrMostrar('fRedeNova', 'errRede', [b, ' já está na lista de redes — escolha no campo acima.']);
+    return;
+  }
+  const novo = await adicionarOpcao('rede_imobiliaria', v);   // grava em listas_opcoes
+  if (!novo) return;
+  syncRedeOptions(novo.valor);
+  document.getElementById('fRede').value = novo.valor;
+  document.getElementById('redeAddRow').classList.remove('show');
+  document.getElementById('fRedeNova').value = '';
+  renderFiltros();   // rede nova já entra no filtro
+  toast('✅ Rede "' + novo.valor + '" adicionada (já entra no filtro)');
+}
+function cancelRede() {
+  document.getElementById('redeAddRow').classList.remove('show');
+  document.getElementById('fRedeNova').value = '';
+  if (document.getElementById('fRede').value === '__nova') document.getElementById('fRede').value = '';
+}
+
+// ── Bairros (chips + autocomplete do CADASTRO de bairros + "＋ novo bairro") ──
+function renderChips() {
+  const field = document.getElementById('bairrosField');
+  field.querySelectorAll('.chip').forEach(c => c.remove());
+  const input = document.getElementById('bairroInput');
+  bairrosSel.forEach(id => {
+    const b = bairroById(id); if (!b) return;
+    const s = document.createElement('span'); s.className = 'chip';
+    s.innerHTML = esc(b.nome) + '<span class="x" onclick="removeBairro(\'' + id + '\');event.stopPropagation()">×</span>';
+    field.insertBefore(s, input);
+  });
+}
+function addBairroId(id) {
+  if (!bairrosSel.includes(id)) bairrosSel.push(id);
+  document.getElementById('bairroInput').value = '';
+  renderChips(); acClose();
+  document.getElementById('bairroInput').focus();
+}
+function removeBairro(id) { bairrosSel = bairrosSel.filter(x => x !== id); renderChips(); }
+// "＋ novo bairro": grava um registro REAL no cadastro de bairros (sem texto livre solto)
+async function criarBairroInline(nome) {
+  nome = (nome || '').trim();
+  if (!nome || _criandoBairro) return;
+  const jaExiste = bairrosAll.find(b => b.nome.toLowerCase() === nome.toLowerCase() && (b.cidade || 'São Paulo').toLowerCase() === 'são paulo');
+  if (jaExiste) { addBairroId(jaExiste.id); return; }
+  _criandoBairro = true;
+  try {
+    const { data, error } = await db().from('bairros').insert({ nome, cidade: 'São Paulo' }).select().single();
+    if (error) { toast('❌ ' + error.message); return; }
+    bairrosAll.push(data);
+    bairrosAll.sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+    addBairroId(data.id);
+    toast('✅ Bairro "' + nome + '" criado no cadastro');
+  } finally { _criandoBairro = false; }
+}
+// Idem no autocomplete de bairros: cada sugestão é um elemento de verdade e a ação vai
+// por addEventListener, com o nome digitado preso na closure. Assim "Jardim D'Abril"
+// funciona e nada do que for digitado é executado como comando. Ver 05_QA.md, defeito D-1.
+function acFilter() {
+  const raw = document.getElementById('bairroInput').value;
+  const q = raw.toLowerCase().trim();
+  const drop = document.getElementById('acDrop'); acHl = -1;
+  if (!q) { acClose(); return; }
+  drop.innerHTML = '';
+  const item = (act, html, acao) => {
+    const it = document.createElement('div');
+    it.className = 'ac-item';
+    it.dataset.act = act;
+    it.innerHTML = html;
+    it.addEventListener('mousedown', acao);
+    drop.appendChild(it);
+    return it;
+  };
+  // Região é sinônimo de busca (D-15): digitar "Jardins" sugere Jardim América/
+  // Paulista/Europa. A sugestão mostra a região para o Alex entender o porquê.
+  const qn = normTxt(q);
+  bairrosAll
+    .filter(b => (normTxt(b.nome).includes(qn) || (b.regiao && normTxt(b.regiao).includes(qn))) && !bairrosSel.includes(b.id))
+    .slice(0, 7)
+    .forEach(b => {
+      const detalhe = [b.regiao, b.zona].filter(Boolean).join(' · ');
+      const it = item('add',
+        ICO_PIN + esc(b.nome) + (detalhe ? ` <span style="color:var(--muted);font-size:11px">· ${esc(detalhe)}</span>` : ''),
+        () => addBairroId(b.id));
+      it.dataset.id = b.id;
+    });
+  const exato = bairrosAll.some(b => b.nome.toLowerCase() === q);
+  if (!exato) {
+    item('novo',
+      ICO_PIN + 'Criar "<b style="margin:0 3px">' + esc(raw) + '</b>"<span class="add-tag">＋ novo bairro no cadastro</span>',
+      () => criarBairroInline(raw));
+  }
+  drop.classList.toggle('show', drop.childElementCount > 0);
+}
+function acKey(e) {
+  const drop = document.getElementById('acDrop');
+  const items = [...drop.querySelectorAll('.ac-item')];
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const alvo = (acHl >= 0 && items[acHl]) ? items[acHl] : items[0];
+    if (alvo) alvo.dispatchEvent(new Event('mousedown'));
+  } else if (e.key === 'ArrowDown') { e.preventDefault(); acHl = Math.min(acHl + 1, items.length - 1); hlAc(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); acHl = Math.max(acHl - 1, 0); hlAc(items); }
+  else if (e.key === 'Backspace' && !document.getElementById('bairroInput').value && bairrosSel.length) { removeBairro(bairrosSel[bairrosSel.length - 1]); }
+  else if (e.key === 'Escape') { acClose(); }
+}
+function hlAc(items) { items.forEach((it, i) => it.classList.toggle('hl', i === acHl)); }
+function acClose() { const d = document.getElementById('acDrop'); d.classList.remove('show'); d.innerHTML = ''; acHl = -1; }
+
+// ── Salvar / excluir ─────────────────────────────────────────────────────────
+async function salvar() {
+  if (salvando) return;   // guarda anti-duplo-clique (CA-3/CA-23)
+  errTopoLimpar(); limparErroNome();
+  const nome = document.getElementById('fNome').value.trim();
+  if (!nome) {
+    fieldErrMostrar('fNome', 'errNome', ['Escreva o nome da imobiliária para poder salvar.']);
+    return;
+  }
+  // Nome repetido: aviso junto do campo, com atalho para o registro que já existe
+  // (regra permanente da seção C do 03_UXUI — toast do canto é proibido aqui).
+  const dupReal = imobs.find(i => i.id !== editId && normTxt(i.nome) === normTxt(nome));
+  if (dupReal) {
+    const b = document.createElement('b'); b.textContent = dupReal.nome;
+    fieldErrMostrar('fNome', 'errNome', ['Já existe a imobiliária ', b, ' no cadastro. Use outro nome ou ',
+      feLink('abra a que já existe', () => { fecharModal(); showFicha(dupReal.id); }), '.']);
+    return;
+  }
+  salvando = true;
+  const btn = document.getElementById('btnSalvar'); btn.style.opacity = '.6';
+  try {
+    const rede = document.getElementById('fRede').value;
+    const payload = {
+      nome,
+      rede: (rede && rede !== '__nova') ? rede : null,
+      telefone:  document.getElementById('fTel').value.trim()   || null,
+      email:     document.getElementById('fEmail').value.trim() || null,
+      instagram: document.getElementById('fInsta').value.trim() || null,
+      site:      document.getElementById('fSite').value.trim()  || null,
+      creci:     document.getElementById('fCreci').value.trim() || null,
+      obs:       document.getElementById('fObs').value.trim()   || null,
+      updated_at: new Date().toISOString(),
+    };
+    let imobId = editId, error;
+    if (editId) {
+      ({ error } = await db().from('imobiliarias').update(payload).eq('id', editId));
+    } else {
+      payload.origem = 'manual';
+      const r = await db().from('imobiliarias').insert(payload).select('id').single();
+      error = r.error; imobId = r.data?.id;
+    }
+    if (error || !imobId) { errTopoMostrar((error?.message || 'erro ao salvar') + '.'); return; }
+
+    // Sincroniza vínculos de bairro (imobiliaria_bairros): remove os tirados, insere os novos
+    const atuais = imobBairros.filter(v => v.imobiliaria_id === imobId).map(v => v.bairro_id);
+    const remover = atuais.filter(id => !bairrosSel.includes(id));
+    const inserir = bairrosSel.filter(id => !atuais.includes(id));
+    if (remover.length) {
+      const { error: e1 } = await db().from('imobiliaria_bairros').delete().eq('imobiliaria_id', imobId).in('bairro_id', remover);
+      if (e1) { toast('⚠️ Imobiliária salva, mas houve erro nos bairros: ' + e1.message); }
+    }
+    if (inserir.length) {
+      const { error: e2 } = await db().from('imobiliaria_bairros').insert(inserir.map(bid => ({ imobiliaria_id: imobId, bairro_id: bid })));
+      if (e2) { toast('⚠️ Imobiliária salva, mas houve erro nos bairros: ' + e2.message); }
+    }
+
+    toast(editId ? '✅ Imobiliária salva' : '✅ Imobiliária criada');
+    const eraEdicao = !!editId;
+    fecharModal();
+    await carregarTudo();
+    renderFiltros();
+    if (eraEdicao && fichaId === imobId) {
+      const i = imobs.find(x => x.id === imobId);
+      if (i) renderFicha(i); else showList();
+    } else render();
+  } finally { salvando = false; btn.style.opacity = '1'; }
+}
+async function excluir() {
+  if (!editId) return;
+  if (!confirm('Excluir esta imobiliária?\n\nAs pessoas da equipe NÃO são apagadas — apenas deixam de estar vinculadas a ela.')) return;
+  const { error } = await db().from('imobiliarias').delete().eq('id', editId);   // CASCADE limpa os vínculos
+  if (error) { toast('❌ ' + error.message); return; }
+  toast('🗑️ Imobiliária excluída');
+  fecharModal();
+  await carregarTudo();
+  renderFiltros();
+  showList();
+}
+
+// ── Start ────────────────────────────────────────────────────────────────────
+init().catch(e => {
+  document.getElementById('conteudo').innerHTML =
+    `<div class="empty-state"><div class="es-icon">${ICO_WARN}</div>
+     <p class="empty-state-title">Não foi possível carregar</p>
+     <p class="empty-state-hint">${esc(e.message || e)}</p>
+     <p style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="location.reload()">Tentar de novo</button></p></div>`;
+});
+
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+/* ─────────────────────────────────────────────────────────────
+   Pandora OS — ACM · casca única
+   Uma folha só para as 6 telas do assistente. Mudou aqui, muda em todas.
+   Tokens copiados de pandora-os/design-tokens.css (valores exatos).
+   Título de bloco copiado de Alex OS v2/Mockups/redesign-acm-builder.html (.acmb-title).
+   Regras: laranja é o único acento · nada de azul · verde só no passo concluído.
+   ───────────────────────────────────────────────────────────── */
+
+:root{
+  --brand-orange:#ff6600; --brand-orange-light:#ff8533; --brand-orange-dark:#cc5200;
+  --bg:#f3f4f7; --surface:#ffffff; --surface2:#f0f1f4; --surface3:#e6e8ee;
+  --text:#1a1d23; --muted:#6b7280; --border:rgba(0,0,0,.10);
+  --accent:var(--brand-orange); --accent-pale:rgba(255,102,0,.11);
+  --accent-sel:rgba(255,102,0,.08); --accent-line:rgba(255,102,0,.38);
+  --shadow-card:0 1px 3px rgba(0,0,0,.07),0 10px 24px -14px rgba(0,0,0,.22);
+  --shadow-btn:0 1px 2px rgba(0,0,0,.07);
+  --success:#16a34a; --danger:#dc2626; --warn:#d97706;
+  --success-pale:rgba(22,163,74,.12); --danger-pale:rgba(220,38,38,.10);
+  --font-brand:'Montserrat',sans-serif;
+  --font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --radius-sm:5px; --radius-md:8px; --radius-lg:10px; --radius-full:9999px;
+  --side-w:212px;
+}
+:root[data-theme="dark"]{
+  --bg:#0e0f12; --surface:#16181d; --surface2:#1c1f25; --surface3:#23272e;
+  --text:#eef0f3; --muted:#8a9099; --border:rgba(255,255,255,.07);
+  --accent-pale:rgba(255,102,0,.12); --accent-sel:rgba(255,102,0,.09); --accent-line:rgba(255,102,0,.32);
+  --shadow-card:0 1px 0 rgba(255,255,255,.04) inset,0 12px 26px -14px rgba(0,0,0,.6);
+  --success:#22c55e; --danger:#ef4444; --warn:#f59e0b;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:15px;line-height:1.5;min-height:100vh;}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+a{color:inherit;text-decoration:none;}
+
+/* ── Estrutura ─────────────────────────────────────────────── */
+.app{display:flex;min-height:100vh;}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+/* ── Menu lateral do sistema ───────────────────────────────── */
+.side{width:var(--side-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);
+      display:flex;flex-direction:column;padding:18px 12px 12px;}
+.side .brand{display:flex;flex-direction:column;gap:1px;padding:0 8px;margin-bottom:24px;}
+.side .brand b{font-family:var(--font-brand);font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--accent);}
+.side .brand span{font-size:10.5px;color:var(--muted);letter-spacing:.02em;}
+.nav-i{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:var(--radius-md);
+       color:var(--muted);font-family:var(--font-brand);font-size:13px;font-weight:600;margin-bottom:2px;cursor:pointer;}
+.nav-i svg{width:17px;height:17px;flex-shrink:0;}
+.nav-i:hover{background:var(--surface2);color:var(--text);}
+.nav-i.on{color:var(--accent);background:var(--accent-sel);box-shadow:inset 0 0 0 1px var(--accent-line);}
+.side-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;padding-left:6px;}
+.side-foot .av{width:32px;height:32px;border-radius:50%;background:var(--surface3);flex-shrink:0;
+               display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.side-foot .av svg{width:16px;height:16px;}
+.side-foot .who{min-width:0;}
+.side-foot .who b{display:block;font-family:var(--font-brand);font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.side-foot .who span{font-size:11px;color:var(--muted);}
+
+/* ── Cabeçalho da avaliação ────────────────────────────────── */
+.top{display:flex;align-items:center;justify-content:space-between;gap:20px;
+     padding:10px 26px;background:var(--surface);border-bottom:1px solid var(--border);}
+.top .imo{flex:0 0 auto;}
+.top .steps{flex:1;}
+.top .imo{display:flex;align-items:center;gap:9px;font-size:13.5px;min-width:0;}
+.top .imo svg{width:16px;height:16px;color:var(--muted);flex-shrink:0;}
+.top .imo b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sair{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-brand);font-size:12.5px;font-weight:600;
+      color:var(--muted);background:none;border:none;cursor:pointer;white-space:nowrap;}
+.sair:hover{color:var(--text);}
+.sair svg{width:15px;height:15px;}
+
+/* ── Passos (centralizados) ────────────────────────────────── */
+/* grade de 6 colunas iguais = passos equidistantes, independentemente do tamanho do rótulo */
+/* Passos dentro da barra do topo, ao lado do endereço — economiza altura.
+   minmax(0,1fr): sem isso o rótulo mais longo estica a coluna e os passos saem tortos. */
+.steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));max-width:900px;margin:0 auto;}
+.step{display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;}
+.step .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+           font-family:var(--font-brand);font-size:11.5px;font-weight:700;
+           background:var(--surface);color:var(--muted);border:1px solid var(--border);}
+.step .lb{font-family:var(--font-brand);font-size:10.5px;font-weight:600;color:var(--muted);white-space:nowrap;
+          overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.step.done .dot{border-color:var(--success);color:var(--success);}
+.step.done .dot svg{width:15px;height:15px;stroke-width:2.4;}
+.step.now .dot{background:var(--accent);border-color:var(--accent);color:#fff;}
+.step.now .lb{color:var(--accent);font-weight:700;}
+/* linha entre as bolinhas — nunca passa por cima do rótulo */
+.step::after{content:"";position:absolute;top:13px;left:calc(50% + 20px);width:calc(100% - 40px);height:1px;background:var(--border);}
+.step:last-child::after{display:none;}
+.step.done::after{background:var(--success);opacity:.45;}
+
+/* ── Área de conteúdo (largura cheia) ──────────────────────── */
+.wrap{flex:1;padding:20px 26px 0;}
+.h1{font-family:var(--font-brand);font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15;}
+.sub{font-size:13.5px;color:var(--muted);margin-top:5px;}
+.head{margin-bottom:18px;}
+
+/* ── Cartão ────────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-card);overflow:hidden;}
+.card + .card{margin-top:16px;}
+/* dentro de grade os cartões são irmãos lado a lado — sem empurrão vertical */
+.grid2 > .card + .card,.grid3 > .card + .card{margin-top:0;}
+/* cartões lado a lado terminam na mesma altura, mesmo com listas de tamanhos diferentes */
+.grid2,.grid3{align-items:stretch;}
+.grid2 > .card,.grid3 > .card{display:flex;flex-direction:column;}
+.grid2 > .card > .card-bd,.grid3 > .card > .card-bd{flex:1;display:flex;flex-direction:column;}
+.card-bd > .drop:last-child{margin-top:auto;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;
+         padding:11px 16px;border-bottom:1px solid var(--border);}
+/* a assinatura do sistema — copiado de .acmb-title do ACM Builder */
+.card-t{font-family:var(--font-brand);font-size:10.5px;font-weight:700;text-transform:uppercase;
+        letter-spacing:.06em;color:var(--accent);white-space:nowrap;}
+.card-st{font-size:11px;color:var(--muted);white-space:nowrap;}
+.card-bd{padding:16px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+
+/* ── Número de destaque ────────────────────────────────────── */
+.fig-lb{font-family:var(--font-brand);font-size:10px;font-weight:700;text-transform:uppercase;
+        letter-spacing:.05em;color:var(--muted);margin-bottom:4px;}
+.fig{font-family:var(--font-brand);font-size:26px;font-weight:800;letter-spacing:-.015em;line-height:1;}
+.fig small{font-size:14px;font-weight:600;color:var(--muted);}
+.fig-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* ── Tabela ────────────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{font-family:var(--font-brand);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+        color:var(--muted);text-align:left;padding:0 10px 9px;border-bottom:1px solid var(--border);}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--border);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
+.tbl .drag{width:22px;color:var(--surface3);cursor:grab;}
+.tbl .drag svg{width:14px;height:14px;stroke:var(--muted);opacity:.45;}
+.tbl tr:hover .drag svg{opacity:.9;}
+.tbl tr:hover td{background:var(--surface2);}
+
+/* ── Etiqueta: cinza com um ponto de cor ───────────────────── */
+.tag{display:inline-flex;align-items:center;gap:6px;padding:3.5px 10px;border-radius:var(--radius-full);
+     background:var(--surface2);border:1px solid var(--border);
+     font-family:var(--font-brand);font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;}
+.tag i{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.tag.ok i{background:var(--success);}
+.tag.br i{background:var(--accent);}
+
+/* ── Chips (escolha) ───────────────────────────────────────── */
+.chips{display:flex;gap:8px;flex-wrap:wrap;}
+.chip{padding:8px 14px;border-radius:var(--radius-full);border:1px solid var(--border);background:var(--surface);
+      font-family:var(--font-brand);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;}
+.chip:hover{color:var(--text);}
+.chip.on{color:var(--accent);background:var(--accent-sel);border-color:var(--accent-line);}
+
+/* ── Alternador de visão ───────────────────────────────────── */
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:3px;}
+.seg button{padding:8px 16px;border:none;background:none;border-radius:var(--radius-sm);cursor:pointer;
+            font-family:var(--font-brand);font-size:12.5px;font-weight:600;color:var(--muted);}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow-btn);}
+
+/* ── Aviso / zona de soltar ────────────────────────────────── */
+.note{display:flex;gap:11px;align-items:flex-start;padding:13px 15px;border-radius:var(--radius-md);
+      background:var(--accent-sel);border:1px solid var(--accent-line);font-size:13px;}
+.note svg{width:17px;height:17px;color:var(--accent);flex-shrink:0;margin-top:1px;}
+.note.quiet{background:var(--surface2);border-color:var(--border);}
+.note.quiet svg{color:var(--muted);}
+.drop{border:1px dashed var(--border);border-radius:var(--radius-md);padding:18px;text-align:center;
+      font-size:12px;color:var(--muted);}
+
+/* ── Faixa de conclusão ────────────────────────────────────── */
+.band{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:16px;
+      background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);
+      border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:20px 22px;}
+.band .alvo{font-family:var(--font-brand);font-size:34px;font-weight:800;letter-spacing:-.025em;line-height:1;}
+.band .est{font-size:13.5px;color:var(--muted);margin-top:7px;}
+.band .por{text-align:right;max-width:330px;}
+.band .por p{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4;}
+
+/* ── Campos ────────────────────────────────────────────────── */
+.f{display:flex;flex-direction:column;gap:6px;}
+.f label{font-size:12px;color:var(--muted);}
+.f input,.f select{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-md);
+                   background:var(--surface);color:var(--text);font-family:var(--font-ui);font-size:14px;}
+.f input:focus,.f select:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-sel);}
+.f .hint{font-size:11px;color:var(--muted);}
+.fields{display:grid;gap:14px;}
+.c2{grid-template-columns:2fr 1fr;} .c4{grid-template-columns:repeat(4,1fr);}
+.c6{grid-template-columns:repeat(6,1fr);} .c3{grid-template-columns:repeat(3,1fr);}
+
+/* ── Chave liga/desliga ────────────────────────────────────── */
+.sw{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;}
+.sw .tr{width:38px;height:22px;border-radius:var(--radius-full);background:var(--surface3);
+        border:1px solid var(--border);position:relative;flex-shrink:0;transition:.15s;}
+.sw .tr::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+               background:var(--surface);box-shadow:var(--shadow-btn);transition:.15s;}
+.sw.on .tr{background:var(--accent-sel);border-color:var(--accent-line);}
+.sw.on .tr::after{left:18px;background:var(--accent);}
+
+/* ── Caixa de seleção ──────────────────────────────────────── */
+.cb{width:19px;height:19px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.cb.on{border-color:var(--accent-line);background:var(--accent-sel);color:var(--accent);}
+.cb svg{width:12px;height:12px;stroke-width:3;}
+
+/* campo editável dentro da tabela — o m² da Prefeitura costuma divergir do real */
+.inp-min{width:74px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);
+         background:var(--surface);color:var(--text);font-family:var(--font-ui);font-size:12.5px;text-align:right;}
+.inp-min:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-sel);}
+.edit-hint{display:inline-flex;align-items:center;gap:5px;}
+.edit-hint svg{width:12px;height:12px;color:var(--muted);opacity:.5;}
+tr:hover .edit-hint svg{opacity:1;color:var(--accent);}
+
+/* linha fora da avaliação */
+.tbl tr.fora td{opacity:.6;}
+.tbl tr.fora:hover td{opacity:1;}
+
+/* ── Botões ────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:0 20px;height:52px;
+     border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);
+     font-family:var(--font-brand);font-size:14px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-btn);}
+.btn svg{width:17px;height:17px;}
+.btn:hover{background:var(--surface2);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px -2px rgba(255,102,0,.45);}
+.btn-primary:hover{background:var(--brand-orange-dark);border-color:var(--brand-orange-dark);}
+.btn-ghost{background:none;border-color:transparent;box-shadow:none;color:var(--muted);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-lg{height:60px;font-size:15px;flex:1;}
+/* botão com o ícone acima do texto — referência trazida pelo Alex (01/08) */
+.btn-stack{flex-direction:column;gap:6px;height:auto;padding:16px 20px;}
+.btn-stack svg{width:26px;height:26px;stroke-width:1.8;}
+
+/* número grande em cima, rótulo embaixo */
+.val{display:flex;flex-direction:column;gap:2px;}
+.val b{font-family:var(--font-brand);font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.1;}
+.val span{font-family:var(--font-brand);font-size:10px;font-weight:700;text-transform:uppercase;
+          letter-spacing:.05em;color:var(--muted);}
+.val.big b{font-size:30px;}
+.val.accent b{color:var(--accent);}
+
+/* etiqueta de distância do alvo — cor sutil, sempre com texto junto */
+.tag.perto{background:var(--success-pale);border-color:rgba(22,163,74,.28);color:#12703a;}
+.tag.perto i{background:var(--success);}
+.tag.medio{background:var(--warn-pale);border-color:rgba(217,119,6,.28);color:#8a5206;}
+.tag.medio i{background:var(--warn);}
+.tag.longe{background:var(--danger-pale);border-color:rgba(220,38,38,.25);color:#a11d1d;}
+.tag.longe i{background:var(--danger);}
+.btn-sm{height:40px;padding:0 15px;font-size:13px;}
+
+/* ── Rodapé de navegação (no fluxo, nunca flutuante) ───────── */
+.foot{display:flex;align-items:center;justify-content:space-between;gap:16px;
+      margin-top:26px;padding:18px 26px 26px;border-top:1px solid var(--border);}
+
+/* ── Link discreto ─────────────────────────────────────────── */
+.lnk{font-family:var(--font-brand);font-size:12.5px;font-weight:600;color:var(--muted);
+     border:none;background:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.lnk:hover{color:var(--accent);}
+.lnk svg{width:14px;height:14px;}

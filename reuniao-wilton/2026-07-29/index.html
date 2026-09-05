@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Due Diligence — conversa com o Wilton · 29/07/2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0e0f12; --surface:#16181d; --surface2:#1c1f25; --surface3:#23272e;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --text:#eef0f3; --muted:#8a9099;
+  --accent:#ff6600; --accent-light:#ff8533; --accent-pale:rgba(255,102,0,.10); --accent-line:rgba(255,102,0,.32);
+  --success:#22c55e; --success-pale:rgba(34,197,94,.12); --success-line:rgba(34,197,94,.3);
+  --warn:#eab308; --warn-pale:rgba(234,179,8,.12); --warn-line:rgba(234,179,8,.3);
+  --info:#3b82f6; --info-pale:rgba(59,130,246,.12); --info-line:rgba(59,130,246,.3);
+  --muteb:#6b7280; --mute-pale:rgba(138,144,153,.12);
+  --radius:10px; --radius-sm:6px; --radius-lg:12px;
+  --font:'Montserrat',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;margin:0 auto;padding:26px 34px 70px}
+svg.i{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:14px;height:14px}
+a{color:inherit}
+
+.hero{border:1px solid var(--border);background:linear-gradient(180deg,var(--surface2),var(--surface));border-radius:var(--radius-lg);padding:24px 28px;margin-bottom:18px}
+.hero .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.02em}
+.hero .who{color:var(--muted);font-size:13px;font-weight:600;margin-top:5px}
+.datebadge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700}
+.momento{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-size:14px}
+.momento b{color:var(--accent-light)}
+
+.quem{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:22px;font-size:13.5px;flex-wrap:wrap}
+.quem .lb{color:var(--muted);font-weight:600}
+.quem button{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.quem button:hover{border-color:var(--accent-line);color:var(--text)}
+.quem button.on{background:var(--accent-pale);border-color:var(--accent);color:var(--accent-light)}
+.quem .dica{color:var(--muted);font-size:12.5px;margin-left:auto}
+
+.sechead{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 13px}
+.sechead svg{color:var(--accent-light)}
+
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+.card{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-lg);padding:20px 22px;display:flex;flex-direction:column;height:100%}
+.card h3{font-size:15px;font-weight:800;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.card .cs{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+.card .corpo{flex:1}
+.card.ok h3{color:var(--success)} .card.ok{border-color:var(--success-line)}
+.card.pend h3{color:var(--warn)} .card.pend{border-color:var(--warn-line)}
+.card.ask h3{color:var(--info)} .card.ask{border-color:var(--info-line)}
+
+ul.lista{list-style:none;display:flex;flex-direction:column;gap:9px}
+ul.lista li{position:relative;padding-left:19px;font-size:13.5px}
+ul.lista li::before{content:'';position:absolute;left:1px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--muteb)}
+ul.lista.g li::before{background:var(--success)}
+ul.lista.y li::before{background:var(--warn)}
+ul.lista.b li::before{background:var(--info)}
+.mini{color:var(--muted);font-size:12px;margin-top:4px;display:block}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border2)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.n{color:var(--muted);width:34px;font-weight:700}
+td.hoje{color:var(--muted)}
+.tagx{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.t-auto{background:var(--success-pale);color:var(--success)}
+.t-some{background:var(--accent-pale);color:var(--accent-light)}
+.t-part{background:var(--warn-pale);color:var(--warn)}
+.t-man{background:var(--mute-pale);color:var(--muteb)}
+.t-ok{background:var(--success-pale);color:var(--success)}
+.t-falta{background:var(--warn-pale);color:var(--warn)}
+.t-and{background:var(--info-pale);color:var(--info)}
+
+.destaque{background:var(--accent-pale);border:1px solid var(--accent-line);border-radius:var(--radius-sm);padding:14px 16px;font-size:13.5px;margin-top:14px}
+.ask-box{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--info);border-radius:var(--radius-sm);padding:13px 15px;margin-bottom:10px;font-size:13.5px}
+.ask-box .q{font-weight:700}
+.ask-box .why{color:var(--muted);font-size:12.5px;margin-top:5px}
+
+.caso{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);padding:18px 20px;display:flex;flex-direction:column;height:100%}
+.caso .cod{font-size:11px;font-weight:700;color:var(--accent-light);letter-spacing:.04em}
+.caso .end{font-size:14.5px;font-weight:700;margin-top:3px}
+.caso .por{color:var(--muted);font-size:12.5px;margin-top:6px;flex:1}
+.caso .dado{margin-top:11px;padding-top:11px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+.caso .dado b{color:var(--text)}
+
+ol.rot{list-style:none;counter-reset:r;display:flex;flex-direction:column;gap:10px}
+ol.rot li{counter-increment:r;position:relative;padding-left:32px;font-size:13.5px}
+ol.rot li::before{content:counter(r);position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);font-size:11px;font-weight:800;display:grid;place-items:center}
+ol.rot .conf{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+
+.fb{margin-top:16px;padding-top:14px;border-top:1px dashed var(--border2)}
+.fb-q{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.fb-txt{width:100%;min-height:64px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:13.5px;padding:10px 12px;resize:vertical}
+.fb-txt:focus{outline:none;border-color:var(--accent-line)}
+.fb-txt::placeholder{color:var(--muteb)}
+.fb-send{margin-top:8px;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);border-radius:var(--radius-sm);padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.fb-send:hover{background:rgba(255,102,0,.18);border-color:var(--accent)}
+.fb-send:disabled{opacity:.6;cursor:default}
+.fb-done{display:none;align-items:center;gap:8px;color:var(--success);font-size:13px;font-weight:700}
+
+.foot{margin-top:34px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+@media(max-width:1200px){.cols3{grid-template-columns:1fr}.cols2{grid-template-columns:1fr}}
+
+@media(max-width:820px){
+  .wrap{padding:16px 14px 54px}
+  .hero{padding:18px 16px;margin-bottom:12px}
+  .hero h1{font-size:20px;line-height:1.25}
+  .hero .top{gap:10px}
+  .datebadge{padding:6px 12px;font-size:12px}
+  .quem{position:static;padding:10px 12px;gap:8px}
+  .quem .dica{margin-left:0;width:100%;font-size:11.5px}
+  .card,.perg,.dec,.caso,.fase,.ask-box,.regra{padding:15px 14px}
+  .kpi{padding:14px 15px}
+  .kpi .v{font-size:22px}
+  .sechead{margin:20px 0 10px;font-size:11px}
+  .tabela-rola{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+  .tabela-rola table{min-width:560px}
+  ol.rot li{padding-left:28px}
+  .foot{flex-direction:column;gap:6px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="top">
+      <div>
+        <h1>Due Diligence — o que já saiu do papel</h1>
+        <div class="who">Alex Fontes (Pandora) · para Wilton Leem · RE/MAX Studio 76</div>
+      </div>
+      <div class="datebadge">
+        <svg class="i sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        29 de julho de 2026
+      </div>
+    </div>
+    <div class="momento">
+      Na segunda você me mostrou o caminho inteiro de uma diligência, do começo ao fim. Desde então fui atrás de cada passo para ver o que dava para automatizar de verdade — <b>três coisas já funcionam</b>, uma <b>não deu certo</b> (o TRF3, que o seu teste derrubou) e o resto depende de perguntas que só você responde.
+      <br><br>Pode ler com calma e <b>responder por escrito em cada bloco</b>, no campo do rodapé. Não precisa esperar reunião.
+    </div>
+  </div>
+
+  <div class="quem">
+    <span class="lb">Quem está escrevendo:</span>
+    <button data-a="Wilton">Wilton</button>
+    <button data-a="Alex">Alex</button>
+    <span class="dica">Escolha uma vez; vale para todos os campos da página.</span>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Onde estamos
+  </div>
+
+  <div class="cols3">
+    <div class="card ok">
+      <h3><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Já funciona</h3>
+      <div class="cs">testado, não é promessa</div>
+      <div class="corpo">
+        <ul class="lista g">
+          <li><b>A matrícula sai sozinha.</b> Pelo portal dos Registradores, com o login que já temos. O emolumento é o mesmo de hoje; some o trabalho de pedir.</li>
+          <li><b>O número do IPTU pelo endereço.</b> Inclusive em apartamento — aquele passo das torres, em que você abre um por um.<span class="mini">Testado num caso da sua fila: Rua Ytaipu 98, ap. 44. O sistema achou o prédio, listou os 69 apartamentos e apontou o contribuinte do 44.</span></li>
+          <li><b>As certidões de pessoa.</b> As dez estão mapeadas, com o que cada uma exige e quanto custa.</li>
+          <li><b>A conta fecha.</b> Uma diligência completa, com dois proprietários, custa cerca de <b>R$ 4,70</b> em consultas.</li>
+        </ul>
+      </div>
+      <div class="fb" data-bloco="Já funciona">
+        <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Seu comentário</div>
+        <textarea class="fb-txt" placeholder="Faz sentido? Algum desses pontos você faria diferente?"></textarea>
+        <button class="fb-send">Enviar</button>
+        <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+      </div>
+    </div>
+
+    <div class="card pend">
+      <h3><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Ainda não resolvido</h3>
+      <div class="cs">para você saber exatamente o que esperar</div>
+      <div class="corpo">
+        <ul class="lista y">
+          <li><b>TRF3 — seu teste derrubou minha ideia.</b> A Certidão Unificada respondeu que não conseguiu gerar para o TRF3 e mandou emitir no próprio tribunal. Continua manual por enquanto.</li>
+          <li><b>e-Proc</b> segue manual.</li>
+          <li><b>CEDI</b> segue sem caminho automático — só se aplica a casa, então na maior parte da carteira nem entra.<span class="mini">O sistema sabe distinguir: a tipologia vem do cadastro do imóvel no Pipe e é confirmada pelo próprio cadastro da prefeitura. Em apartamento ele nem tenta o CEDI.</span></li>
+          <li><b>Nem todo endereço é encontrado na hora de achar o número do IPTU.</b> No teste, justamente o caso que travou você na segunda — Av. Santo Amaro, 3526 — não retornou. O prédio provavelmente ainda não teve o IPTU desmembrado, que foi a sua própria conclusão. Nesses casos continua valendo a sua regra: registrar como não identificado e pedir ao corretor.</li>
+          <li><b>Ler a fila do Pipe automaticamente.</b> A integração foi liberada e já autentica, mas falta o caminho para listar o estoque por status de diligência. O suporte deles ficou de responder em até 48h.</li>
+        </ul>
+      </div>
+      <div class="fb" data-bloco="Ainda não resolvido">
+        <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Seu comentário</div>
+        <textarea class="fb-txt" placeholder="Algum desses pontos atrapalha o seu trabalho? Tem outro que eu não listei?"></textarea>
+        <button class="fb-send">Enviar</button>
+        <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+      </div>
+    </div>
+
+    <div class="card ask">
+      <h3><svg class="i sm" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Preciso de você</h3>
+      <div class="cs">o que só você responde</div>
+      <div class="corpo">
+        <div class="ask-box">
+          <div class="q">TRF3: qual caminho seguimos?</div>
+          <div class="why">A unificada não serviu. Sobra tentar o serviço do próprio TRF3, que é instável — funciona em cerca de 1 a cada 5 tentativas. A boa notícia: <b>tentativa que falha não é cobrada</b>. Dá para o sistema insistir sozinho até sair, sem custo extra. Você aceita esse caminho, ou prefere continuar tirando à mão?</div>
+        </div>
+        <div class="ask-box">
+          <div class="q">As certidões que apareceram na primeira venda analisada entram no cardápio?</div>
+          <div class="why"><b>CND Estadual (SEFAZ-SP)</b> e <b>FGTS/CRF</b> para empresas — as duas têm caminho automático e funcionam bem. E o <b>Serasa</b>: você usa sempre, além dos protestos do CENPROT? Substitui ou complementa?</div>
+        </div>
+        <div class="ask-box">
+          <div class="q">Antes de emitir, o sistema pede sua confirmação?</div>
+          <div class="why">Minha proposta: nas primeiras semanas o sistema mostra o que encontrou e <b>só emite depois que você confirmar</b>. Quando estivermos seguros do acerto, você decide se libera a emissão direta.</div>
+        </div>
+      </div>
+      <div class="fb" data-bloco="Preciso de você — perguntas">
+        <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Suas respostas</div>
+        <textarea class="fb-txt" placeholder="Responda as três aqui — pode ser em uma linha cada."></textarea>
+        <button class="fb-send">Enviar</button>
+        <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+    Como fica o seu dia a dia
+  </div>
+
+  <div class="card">
+    <div class="tabela-rola"><table>
+      <thead>
+        <tr><th></th><th style="width:37%">Como é hoje</th><th style="width:37%">Como fica</th><th>Ganho</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="n">1</td><td class="hoje">Abre o e-mail ou a lista e escolhe um caso</td><td>O sistema varre a fila de madrugada e já começa</td><td><span class="tagx t-some">some</span></td></tr>
+        <tr><td class="n">2</td><td class="hoje">Abre o caso, vê os anexos; se falta contrato, vai ao Clicksign</td><td>Puxa contrato e anexos sozinho</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">3</td><td class="hoje">Cria a pasta no Drive a partir do modelo</td><td>Criada sozinha, no seu padrão</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">4</td><td class="hoje">Confere a matrícula, descobre o número errado, pede no ONR</td><td>Confere o número e pede a matrícula sozinho</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">5</td><td class="hoje">Lê a matrícula: titular, regime, adquirentes</td><td>A IA lê e monta; <b>você confere</b></td><td><span class="tagx t-part">vira conferência</span></td></tr>
+        <tr><td class="n">6</td><td class="hoje">Preenche a ficha de fechamento para copiar e colar</td><td>Não existe mais</td><td><span class="tagx t-some">some</span></td></tr>
+        <tr><td class="n">7</td><td class="hoje">Decide os antecessores (10 anos)</td><td>Regra automática pela cadeia da matrícula</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">8</td><td class="hoje">Monta a planilha e sobe no Plexi</td><td>Dispara as certidões direto</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">9</td><td class="hoje">TRF3 e e-Proc na mão</td><td>e-Proc continua manual; TRF3 a decidir com você</td><td><span class="tagx t-man">manual</span></td></tr>
+        <tr><td class="n">10</td><td class="hoje">Guarda o recibo do TJSP e controla no Trello</td><td>Fila de espera no sistema; robô busca quando fica pronta</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">11</td><td class="hoje">Baixa o zip, converte e junta o PDF na ordem do CCV</td><td>Compilado gerado na ordem certa</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">12</td><td class="hoje">Caça o número do IPTU, torre por torre</td><td>Descoberto pelo endereço</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">13</td><td class="hoje">Reconhece HIS de olho, pela metragem e pelo ano</td><td>O sistema levanta a bandeira sozinho</td><td><span class="tagx t-auto">automático</span></td></tr>
+        <tr><td class="n">14</td><td class="hoje">Escreve o relatório com as mensagens padrão</td><td>Texto pronto; <b>você revisa e envia</b></td><td><span class="tagx t-part">vira revisão</span></td></tr>
+        <tr><td class="n">15</td><td class="hoje">Arrasta o cartão no controle interno</td><td>Automático</td><td><span class="tagx t-some">some</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="destaque">
+      <b>O que continua sendo seu:</b> a leitura jurídica, as ressalvas, o que fazer quando algo não bate e o parecer final. O sistema <b>nunca fecha sozinho</b> um caso com dúvida — ele para e chama você.
+    </div>
+    <div class="fb" data-bloco="Como fica o dia a dia (15 passos)">
+      <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Seu comentário sobre os 15 passos</div>
+      <textarea class="fb-txt" placeholder="Algum passo está descrito errado? Falta algum que você faz e não está aqui? Algum que você prefere continuar fazendo à mão?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Os sistemas que a diligência usa — o que já temos e o que falta
+  </div>
+
+  <div class="card">
+    <div class="tabela-rola"><table>
+      <thead>
+        <tr><th style="width:20%">Sistema</th><th style="width:34%">Para que serve na diligência</th><th style="width:14%">Situação</th><th>Observação</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><b>PipeImob</b></td><td>Fila de gestões, documentos do imóvel e relatório final</td><td><span class="tagx t-and">parcial</span></td><td>Acesso de administrador e integração liberados. Falta só o caminho para listar o estoque por status — o suporte respondeu que leva até 48h.</td></tr>
+        <tr><td><b>Registradores (ONR)</b></td><td>Matrícula atualizada</td><td><span class="tagx t-ok">temos</span></td><td>Login e senha guardados. Falta o primeiro teste em caso real.</td></tr>
+        <tr><td><b>Infosimples</b></td><td>Emissão automática das certidões</td><td><span class="tagx t-ok">temos</span></td><td>Conta ativa e com saldo.</td></tr>
+        <tr><td><b>GeoSampa</b></td><td>Número do IPTU a partir do endereço</td><td><span class="tagx t-ok">temos</span></td><td>Serviço público da prefeitura, sem login e sem custo.</td></tr>
+        <tr><td><b>Senha Web da Prefeitura</b></td><td>Certidão de dados cadastrais do imóvel (DUC)</td><td><span class="tagx t-ok">temos</span></td><td>Recebida do Samuel.</td></tr>
+        <tr><td><b>Plexi</b></td><td>É o que faz as certidões hoje</td><td><span class="tagx t-ok">temos</span></td><td>Acesso liberado, para comparar custo e resultado com o caminho novo.</td></tr>
+        <tr><td><b>Google Drive</b></td><td>Pasta onde você guarda os casos</td><td><span class="tagx t-falta">falta</span></td><td><b>É o que mais preciso agora</b> — para o sistema gravar no seu padrão e não criar retrabalho.</td></tr>
+        <tr><td><b>Clicksign</b></td><td>Contrato de captação, quando o corretor não anexa</td><td><span class="tagx t-falta">falta</span></td><td>Só se você achar que o sistema deve buscar lá sozinho.</td></tr>
+        <tr><td><b>Assertiva</b></td><td>Empresas ligadas ao proprietário (para a DD2)</td><td><span class="tagx t-and">a definir</span></td><td>Você já usa. Melhor aproveitar o acesso da Studio do que abrir outro.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="fb" data-bloco="Sistemas e acessos">
+      <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Comentário sobre os acessos</div>
+      <textarea class="fb-txt" placeholder="Falta algum sistema nesta lista? Como faço para ter acesso à pasta do Drive?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+    Como você guarda os arquivos
+  </div>
+
+  <div class="card">
+    <div class="cs">Se o sistema entregar num padrão diferente do seu, vira retrabalho. Por isso preciso entender exatamente como você organiza hoje.</div>
+    <div class="corpo">
+      <ul class="lista b">
+        <li><b>A pasta modelo</b> — o nome exato de cada subpasta e o que vai em cada uma.</li>
+        <li><b>O nome dos arquivos</b> — como você nomeia matrícula, compilado e certidões avulsas.</li>
+        <li><b>O Drive é da Studio ou seu?</b> O sistema pode gravar direto na pasta?</li>
+        <li><b>A ordem do compilado</b> — você segue a ordem do CCV; queria ver um pronto para reproduzir igual.</li>
+        <li><b>As três mensagens padrão</b> do relatório — queria o texto exato, para o sistema escrever igual, não parecido.</li>
+      </ul>
+      <div class="destaque">
+        Se puder, o melhor de tudo: me mande <b>um caso já concluído, inteiro</b> — a pasta no Drive e o relatório no Pipe. Vale mais que qualquer explicação.
+      </div>
+    </div>
+    <div class="fb" data-bloco="Como guarda os arquivos">
+      <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Me explique aqui</div>
+      <textarea class="fb-txt" placeholder="Pode escrever do seu jeito: nomes das pastas, como nomeia os arquivos, e se o sistema pode gravar direto lá."></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/><path d="M12 2v13M8 6l4-4 4 4"/></svg>
+    Os três casos que quero testar com você
+  </div>
+
+  <div class="cols3">
+    <div class="caso">
+      <div class="cod">601301062-31 · casa</div>
+      <div class="end">Rua Nicolau Barreto, 552</div>
+      <div class="por">Captado em 15/05, corretora Maria Izabel. <b>Por quê:</b> em casa a cadeia fecha inteira — é o caso onde tudo deve funcionar do começo ao fim.</div>
+      <div class="dado">O sistema já achou o IPTU: <b>085.051.0015-8</b></div>
+    </div>
+    <div class="caso">
+      <div class="cod">601301058-69 · apartamento</div>
+      <div class="end">Rua Ytaipu, 98 — ap. 44</div>
+      <div class="por">Captado em 27/07, corretora Fernanda. <b>Por quê:</b> é o caso mais recente da fila e o tipo mais comum da carteira — 205 dos 308 imóveis são apartamento.</div>
+      <div class="dado">O sistema já achou o IPTU: <b>045.120.0236-7</b> · prédio com 69 unidades</div>
+    </div>
+    <div class="caso">
+      <div class="cod">601301090-4 · dois proprietários</div>
+      <div class="end">Rua Dr. Gentil Leite Martins, 242 — ap. 12</div>
+      <div class="por">Captado em 24/06. <b>Por quê:</b> dois titulares, provável casal. É onde um erro do sistema seria grave — deixar de tirar certidão de um cônjuge.</div>
+      <div class="dado">Testa a regra que você me ensinou: <b>dois adquirentes no plural puxam os dois</b>, mesmo com separação de bens</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M12 2a10 10 0 1 0 10 10"/></svg>
+    Como será o teste desses três casos
+  </div>
+
+  <div class="card">
+    <div class="cs">
+      A ideia é rodar os três casos <b>com você olhando a tela</b> — eu faço, você confere passo a passo e diz onde está errado. São casos reais da sua fila: se tudo correr bem, não é demonstração, são três diligências prontas de verdade. Se falhar em algum ponto, paramos ali e você retoma à mão, sem prejuízo.
+    </div>
+    <div class="cols2" style="margin-top:14px">
+      <div>
+        <div class="fb-q" style="margin-bottom:10px">O que eu mostro, na ordem</div>
+        <ol class="rot">
+          <li><b>Entro só com o endereço</b>, e mais nada.
+            <span class="conf">Você confere: achou o prédio certo?</span></li>
+          <li><b>Cartório e número do IPTU</b> aparecem sozinhos.
+            <span class="conf">Você confere: é o mesmo que você acharia à mão? No apartamento, é a unidade certa?</span></li>
+          <li><b>A matrícula</b> é pedida e baixada.
+            <span class="conf">Você confere: é a matrícula certa e está atualizada?</span></li>
+          <li><b>A IA lê a matrícula</b> e aponta titular, estado civil, regime e adquirentes.
+            <span class="conf">Você confere: acertou o dono atual? Pegou os dois adquirentes quando é o caso?</span></li>
+          <li><b>Compara quem assinou o contrato</b> com o titular da matrícula.
+            <span class="conf">Você confere: se não bater, ele parou e avisou, como você faria?</span></li>
+          <li><b>Monta a lista de certidões</b> do caso.
+            <span class="conf">Você confere: falta alguma? Sobra alguma que não se aplica?</span></li>
+          <li><b>Levanta o alerta de HIS</b>, se for imóvel pequeno e recente.
+            <span class="conf">Você confere: levantou nos casos certos, sem alarme falso?</span></li>
+        </ol>
+      </div>
+      <div>
+        <div class="fb-q" style="margin-bottom:10px">O que anoto junto com você — é isso que vira melhoria</div>
+        <ol class="rot">
+          <li><b>Onde ele errou.</b> Qualquer coisa fora do lugar, por menor que seja.
+            <span class="conf">Erro pequeno hoje vira erro grande em 200 casos.</span></li>
+          <li><b>Onde ele acertou mas você não confiaria.</b> Tão importante quanto errar: se você conferiria de novo, o sistema precisa mostrar melhor de onde tirou a informação.</li>
+          <li><b>O que ele não mostrou e você queria ver.</b> Alguma informação do seu processo que sumiu no nosso.</li>
+          <li><b>Quanto tempo levou</b>, comparado com o tempo que você levaria à mão no mesmo caso.
+            <span class="conf">É o número que mostra ao Samuel se o projeto está valendo.</span></li>
+          <li><b>O que você faria diferente.</b> Ordem dos passos, nome dos botões, o que aparece primeiro na tela.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="fb" data-bloco="Teste dos três casos">
+      <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Comentário sobre o teste</div>
+      <textarea class="fb-txt" placeholder="Concorda com esses três casos? Prefere outros? Podemos usá-los de verdade, com custo real (poucos reais no total)?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+    Qualquer outra coisa
+  </div>
+
+  <div class="card">
+    <div class="cs">Se lembrar de algo que não coube em nenhum bloco — uma ideia, uma preocupação, um detalhe do processo que eu não peguei — escreva aqui.</div>
+    <div class="fb" data-bloco="Livre">
+      <div class="fb-q"><svg class="i sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Campo livre</div>
+      <textarea class="fb-txt" placeholder="Escreva à vontade."></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Preparado por Alex Fontes · Pandora IA Soluções</span>
+    <span>Due Diligence · RE/MAX Studio 76 · 29 de julho de 2026</span>
+  </div>
+
+</div>
+
+<script>
+const SB_URL='https://sobmjqounukzbplrmhkr.supabase.co';
+const SB_KEY='sb_publishable_o5fTXnmp8hhp76WymPJ_MQ_MuJUhvfY';
+const PAUTA='wilton-2026-07-29';
+let sbc=null;
+try{ if(typeof supabase!=='undefined') sbc=supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.error(e); }
+
+let autor = localStorage.getItem('pauta_autor') || null;
+const btns = document.querySelectorAll('.quem button');
+function pintaAutor(){ btns.forEach(b=>b.classList.toggle('on', b.dataset.a===autor)); }
+btns.forEach(b=>b.addEventListener('click',()=>{
+  autor = (autor===b.dataset.a) ? null : b.dataset.a;
+  if(autor) localStorage.setItem('pauta_autor',autor); else localStorage.removeItem('pauta_autor');
+  pintaAutor();
+}));
+pintaAutor();
+
+document.querySelectorAll('.fb').forEach(fb=>{
+  fb.querySelector('.fb-send').addEventListener('click', async()=>{
+    const ta=fb.querySelector('.fb-txt');
+    const txt=ta.value.trim();
+    if(!txt) { ta.focus(); return; }
+    const send=fb.querySelector('.fb-send');
+    send.disabled=true; send.textContent='Enviando…';
+    try{
+      const {error}=await sbc.from('pauta_feedback').insert({
+        pauta:PAUTA,
+        projeto:fb.dataset.bloco,
+        avaliacao:autor||'nao_informado',
+        comentario:txt
+      });
+      if(error) throw error;
+      fb.querySelectorAll('.fb-q,.fb-txt,.fb-send').forEach(x=>x.style.display='none');
+      fb.querySelector('.fb-done').style.display='flex';
+    }catch(e){
+      console.error(e); send.disabled=false; send.textContent='Não foi — tentar de novo';
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pauta Reunião — Studio 76 · 29/07/2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0e0f12; --surface:#16181d; --surface2:#1c1f25; --surface3:#23272e;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --text:#eef0f3; --muted:#8a9099;
+  --accent:#ff6600; --accent-light:#ff8533; --accent-pale:rgba(255,102,0,.10); --accent-line:rgba(255,102,0,.32);
+  --success:#22c55e; --success-pale:rgba(34,197,94,.12);
+  --warn:#eab308; --warn-pale:rgba(234,179,8,.12);
+  --info:#3b82f6; --info-pale:rgba(59,130,246,.12);
+  --muteb:#6b7280; --mute-pale:rgba(138,144,153,.12);
+  --danger:#ef4444;
+  --radius:10px; --radius-sm:6px; --radius-lg:12px;
+  --font:'Montserrat',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:30px 24px 80px}
+svg.i{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:14px;height:14px}
+a{color:inherit}
+
+.hero{border:1px solid var(--border);background:linear-gradient(180deg,var(--surface2),var(--surface));border-radius:var(--radius-lg);padding:26px 28px;margin-bottom:26px}
+.hero .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hero h1{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.hero .who{color:var(--muted);font-size:13px;font-weight:600;margin-top:4px}
+.datebadge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700}
+.momento{margin-top:18px;padding-top:18px;border-top:1px solid var(--border);color:var(--text);font-size:14px}
+.momento b{color:var(--accent-light)}
+
+.sechead{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:30px 0 14px}
+.sechead svg{color:var(--accent-light)}
+
+.index{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.icard{display:block;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);padding:16px 18px;text-decoration:none;transition:.15s}
+.icard:hover{border-color:var(--accent-line);background:var(--surface2)}
+.icard .r1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.icard .nm{font-size:15px;font-weight:700}
+.icard .ds{color:var(--muted);font-size:12.5px;margin-top:6px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge .dot{width:7px;height:7px;border-radius:50%}
+.b-live{background:var(--success-pale);color:var(--success)} .b-live .dot{background:var(--success)}
+.b-dev{background:var(--info-pale);color:var(--info)} .b-dev .dot{background:var(--info)}
+.b-plan{background:var(--mute-pale);color:var(--muteb)} .b-plan .dot{background:var(--muteb)}
+
+.proj{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-lg);padding:24px 26px;margin-bottom:20px;scroll-margin-top:16px}
+.proj>h2{font-size:19px;font-weight:800;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.proj .sub{color:var(--muted);font-size:13px;margin-top:4px}
+.resp{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:4px 11px}
+.block{margin-top:18px}
+.block .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent-light);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.block p{font-size:14px}
+.block p + p{margin-top:9px}
+.rmap{list-style:none;display:flex;flex-direction:column;gap:7px}
+.rmap li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px}
+.rmap .mk{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;margin-top:1px}
+.mk.done{background:var(--success-pale);color:var(--success)}
+.mk.doing{background:var(--accent-pale);color:var(--accent-light)}
+.mk.next{background:var(--mute-pale);color:var(--muteb)}
+.rmap .rx{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-left:auto;white-space:nowrap;padding-top:2px}
+ul.ev{list-style:none;display:flex;flex-direction:column;gap:6px}
+ul.ev li{position:relative;padding-left:20px;font-size:13.5px}
+ul.ev li::before{content:'';position:absolute;left:2px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--success)}
+.links{display:flex;gap:10px;flex-wrap:wrap}
+.lk{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent-line);background:var(--accent-pale);color:var(--accent-light);border-radius:var(--radius-sm);padding:9px 14px;font-size:13px;font-weight:600;text-decoration:none;transition:.15s;cursor:pointer}
+.lk:hover{border-color:var(--accent);background:rgba(255,102,0,.18)}
+.lk.dim{opacity:1;pointer-events:none;border-color:var(--border2);background:var(--surface2);color:var(--muted)}
+.note-inline{font-size:12px;color:var(--muted);margin-top:8px}
+.duvida{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:12px 15px;margin-bottom:9px;font-size:13.5px}
+.duvida .dd{color:var(--muted);font-size:12px;margin-top:5px}
+.destaque{background:var(--accent-pale);border:1px solid var(--accent-line);border-radius:var(--radius-sm);padding:14px 16px;font-size:13.5px;margin-top:14px}
+.destaque b{color:var(--accent-light)}
+table.cmp{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+table.cmp th,table.cmp td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border)}
+table.cmp th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+table.cmp td.ok{color:var(--success);font-weight:600}
+table.cmp td.no{color:var(--muted)}
+
+.fb{margin-top:22px;padding-top:18px;border-top:1px dashed var(--border2)}
+.fb-q{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:11px}
+.fb-btns{display:flex;gap:10px;margin-bottom:11px}
+.fb-thumb{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);background:var(--surface2);border-radius:var(--radius-sm);padding:9px 16px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:.15s}
+.fb-thumb:hover{border-color:var(--border2)}
+.fb-thumb.up.on{background:var(--success-pale);border-color:rgba(34,197,94,.5);color:var(--success)}
+.fb-thumb.down.on{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.5);color:var(--danger)}
+.fb-txt{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:11px 13px;color:var(--text);font-family:var(--font);font-size:13.5px;resize:vertical;min-height:64px;outline:none}
+.fb-txt:focus{border-color:var(--accent-line)}
+.fb-send{margin-top:11px;display:inline-flex;align-items:center;gap:8px;background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:var(--radius-sm);padding:9px 18px;font-family:var(--font);font-weight:600;font-size:13px;cursor:pointer}
+.fb-send:hover{background:var(--accent-light)}
+.fb-send:disabled{opacity:.6;cursor:not-allowed}
+.fb-done{display:none;align-items:center;gap:9px;color:var(--success);font-weight:600;font-size:14px;padding:8px 0}
+
+.foot{margin-top:34px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.7}
+@media(max-width:680px){.index{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="top">
+      <div>
+        <h1>Pauta de Reunião</h1>
+        <div class="who">RE/MAX Studio 76 · Alex Fontes &amp; Samuel</div>
+      </div>
+      <span class="datebadge">
+        <svg class="i sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        29/07/2026
+      </span>
+    </div>
+    <div class="momento">
+      <b>Momento:</b> o <b>Pandora OS</b> saiu do papel — a base do sistema multi-corretor está no ar, com login, papéis e a área de Equipe. A <b>Due Diligence</b> ganhou o processo completo do Dr. Wilton mapeado ao vivo, e com ele o tamanho real da dor: <b>308 gestões ativas, 208 sem diligência</b>. E entra na pauta um projeto novo, que virou prioridade depois da reunião com a Avalux: o <b>ACM Builder</b> — a avaliação que o corretor faz na frente do proprietário. Em cada projeto: objetivo, roadmap, o que evoluiu, os links, as dúvidas, e um espaço pra você deixar seu retorno.
+    </div>
+  </div>
+
+  <!-- ÍNDICE -->
+  <div class="sechead"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Projetos em andamento</div>
+  <div class="index">
+    <a class="icard" href="#pandoraos">
+      <div class="r1"><span class="nm">Pandora OS · a base do sistema</span><span class="badge b-live"><span class="dot"></span>No ar</span></div>
+      <div class="ds">O sistema multi-corretor da Studio 76: login, papéis, equipe e o console que liga cada módulo.</div>
+    </a>
+    <a class="icard" href="#acm">
+      <div class="r1"><span class="nm">ACM Builder</span><span class="badge b-plan"><span class="dot"></span>Planejamento</span></div>
+      <div class="ds">A avaliação que o corretor apresenta ao proprietário — partindo do que realmente vendeu, não do que está anunciado.</div>
+    </a>
+    <a class="icard" href="#dd">
+      <div class="r1"><span class="nm">Due Diligence</span><span class="badge b-dev"><span class="dot"></span>Em desenvolvimento</span></div>
+      <div class="ds">Verifica se o imóvel está desimpedido pra venda. A IA lê a matrícula e monta o caso.</div>
+    </a>
+    <a class="icard" href="#comparador">
+      <div class="r1"><span class="nm">Comparador Gestões × ACM</span><span class="badge b-live"><span class="dot"></span>No ar (piloto)</span></div>
+      <div class="ds">Compara o preço pedido de cada gestão com o valor do ACM e aponta onde vale investir em mídia.</div>
+    </a>
+    <a class="icard" href="#gestoes">
+      <div class="r1"><span class="nm">Controle de Gestões</span><span class="badge b-plan"><span class="dot"></span>Planejamento</span></div>
+      <div class="ds">O processo comercial dos corretores, da captação até a escritura, dentro do Pandora OS.</div>
+    </a>
+  </div>
+
+  <div class="sechead"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>Os projetos, um a um</div>
+
+  <!-- ═══ PANDORA OS ═══ -->
+  <div class="proj" id="pandoraos">
+    <h2>Pandora OS · a base do sistema <span class="badge b-live"><span class="dot"></span>No ar</span></h2>
+    <div class="sub">O sistema multi-corretor onde todos os outros módulos vão morar.</div>
+    <div class="resp"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Responsável: Alex Fontes (Pandora)</div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Objetivo</div>
+      <p>Transformar o sistema que o Alex usa hoje sozinho na plataforma da Studio 76, com cada corretor entrando com o próprio login e enxergando só o que é dele — e você, como gestor, enxergando tudo. É a fundação: sem ela, ACM, Due Diligence e Controle de Gestões não têm onde rodar com a equipe inteira.</p>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Roadmap</div>
+      <ul class="rmap">
+        <li><span class="mk done">&#10003;</span><span>Entrada no sistema: login, convite de corretor, ativar e desativar</span><span class="rx">Feito</span></li>
+        <li><span class="mk done">&#10003;</span><span>Papéis: gestor, corretor, jurídico e apoio — cada um com sua visão</span><span class="rx">Feito</span></li>
+        <li><span class="mk done">&#10003;</span><span>Área Equipe e o modo "ver como corretor", pra você conferir o que cada um vê</span><span class="rx">Feito</span></li>
+        <li><span class="mk doing">&#9679;</span><span>Módulos habilitáveis por imobiliária e marca configurável</span><span class="rx">Em curso</span></li>
+        <li><span class="mk next">&#9675;</span><span>Trazer os módulos pra dentro: Due Diligence, ACM, Comparador</span><span class="rx">A seguir</span></li>
+        <li><span class="mk next">&#9675;</span><span>Aplicativo no celular (instalar na tela inicial, funcionar na rua)</span><span class="rx">A seguir</span></li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>O que evoluiu desde a última conversa</div>
+      <ul class="ev">
+        <li>O primeiro bloco do sistema foi publicado e passou por revisão independente antes de subir — 90 verificações, 5 problemas encontrados e corrigidos antes de chegar ao Alex.</li>
+        <li>Entraram os papéis de <b>jurídico</b> (Dr. Wilton) e <b>apoio</b>, além de gestor e corretor.</li>
+        <li>Entrou o modo <b>"ver como corretor"</b>: você abre a tela exatamente como o corretor vê, sem deixar rastro no trabalho dele.</li>
+        <li>Cada imobiliária pode ter módulos diferentes ligados — a base para o sistema atender outras casas no futuro.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Links</div>
+      <div class="links">
+        <a class="lk" href="https://pandora-os.pages.dev/" target="_blank"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Abrir o Pandora OS</a>
+        <span class="lk dim"><svg class="i sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M6.5 10v4h11"/></svg>Fluxograma — em produção</span>
+      </div>
+      <div class="note-inline">Login próprio para você, sem depender do sistema pessoal do Alex.</div>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Dúvidas / decisões que preciso de você</div>
+      <div class="duvida">Quais corretores entram primeiro no sistema? Faz sentido começar com um grupo pequeno antes de abrir pra equipe toda.
+        <div class="dd">Sugestão: 4 ou 5 corretores, incluindo um dos mais experientes e um dos que têm mais dificuldade com tecnologia.</div>
+      </div>
+      <div class="duvida">Confirmação: os corretores vão querer usar pelo celular na rua? Isso muda a ordem do que construímos.</div>
+    </div>
+
+    <div class="fb" data-proj="Pandora OS">
+      <div class="fb-q">O que você achou deste projeto?</div>
+      <div class="fb-btns">
+        <button class="fb-thumb up" data-v="joia"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"/></svg>Joia</button>
+        <button class="fb-thumb down" data-v="joia_invertido"><svg class="i sm" viewBox="0 0 24 24"><path d="M17 14V2M9 18.12L10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"/></svg>Não curti</button>
+      </div>
+      <textarea class="fb-txt" placeholder="Quer escrever algo? Sugestão, dúvida, o que achou… (opcional)"></textarea>
+      <button class="fb-send">Enviar meu retorno</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Obrigado pelo retorno!</div>
+    </div>
+  </div>
+
+  <!-- ═══ ACM BUILDER ═══ -->
+  <div class="proj" id="acm">
+    <h2>ACM Builder <span class="badge b-plan"><span class="dot"></span>Planejamento</span></h2>
+    <div class="sub">A avaliação que o corretor apresenta ao proprietário — construída a partir do que realmente vendeu.</div>
+    <div class="resp"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Responsável: Alex Fontes (Pandora)</div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Objetivo</div>
+      <p>Dar a cada corretor da Studio 76 uma ferramenta que monte a avaliação comparativa em minutos, passo a passo, e gere a apresentação pronta pra usar na frente do proprietário — com a identidade da RE/MAX, sem cada um inventando o seu.</p>
+      <p>A diferença do nosso pro que existe no mercado é a base do cálculo: as ferramentas concorrentes trabalham com <b>preço de anúncio</b>, que é o que o vendedor pede. Nós partimos do <b>preço pelo qual os imóveis realmente venderam</b>, usando o imposto de transmissão que a Prefeitura de São Paulo publica — hoje são <b>795 mil vendas de 2019 a 2026</b>. É o argumento que convence o proprietário a aceitar o preço certo.</p>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35"/><circle cx="11" cy="11" r="8"/></svg>Por que entrou na pauta agora</div>
+      <p>Na demonstração da <b>Avalux</b> em 27/07 ficou claro o tamanho da oportunidade. A ferramenta deles é rápida e bem apresentada, mas a base é só anúncio — e o valor que ela sugeriu no teste saiu <b>16% acima da média dos próprios imóveis comparados</b>, sem explicar o porquê. Um corretor experiente não consegue defender esse número na frente do proprietário.</p>
+      <div class="destaque">
+        <b>Referência de mercado:</b> a tabela da Avalux cobra por tamanho de equipe — até 10 corretores R$ 499/mês, 11 a 25 R$ 1.320, <b>26 a 50 R$ 1.999</b>, 51 a 100 R$ 4.899. A Studio 76 cairia na faixa de R$ 1.999/mês. Serve pra dimensionar o valor do que estamos construindo em casa.
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg>Como vai funcionar</div>
+      <table class="cmp">
+        <tr><th>No nosso</th><th>Por quê</th></tr>
+        <tr><td>Passo a passo, uma pergunta por vez</td><td class="no">A equipe tem corretores com menos familiaridade com sistema — tela cheia de campos afasta</td></tr>
+        <tr><td>Vendas reais primeiro, anúncios depois</td><td class="no">O valor-alvo vem de quem já vendeu; os anúncios só sustentam o argumento</td></tr>
+        <tr><td>Escolha dos comparáveis um a um: serve ou não serve</td><td class="no">Rápido de fazer e o corretor entende o que está escolhendo</td></tr>
+        <tr><td>Colar o link do anúncio e a IA preenche</td><td class="no">Elimina digitação</td></tr>
+        <tr><td>Identidade RE/MAX fixa na apresentação</td><td class="no">Padrão da casa preservado — o corretor troca foto e dados, não a marca</td></tr>
+        <tr><td>Painel do gestor desde o primeiro dia</td><td class="no">Você acompanha quantas avaliações cada corretor faz e quantas viram gestão</td></tr>
+      </table>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Roadmap</div>
+      <ul class="rmap">
+        <li><span class="mk doing">&#9679;</span><span>Planejamento: material do concorrente analisado, decisões tomadas, fluxogramas</span><span class="rx">Em curso</span></li>
+        <li><span class="mk next">&#9675;</span><span>Desenho das telas pra aprovação, antes de qualquer código</span><span class="rx">A seguir</span></li>
+        <li><span class="mk next">&#9675;</span><span>Avaliação completa funcionando + apresentação em PDF + painel do gestor</span><span class="rx">Entrega 1</span></li>
+        <li><span class="mk next">&#9675;</span><span>Preenchimento automático pelo link do anúncio</span><span class="rx">Entrega 2</span></li>
+        <li><span class="mk next">&#9675;</span><span>Busca automática de anúncios nos portais</span><span class="rx">Entrega 3</span></li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Dúvidas / decisões que preciso de você</div>
+      <div class="duvida">Como você e os corretores mais fortes da casa ajustam o valor pelo <b>estado do imóvel</b>? Um apartamento reformado e um original no mesmo prédio vendem por preços bem diferentes, e queremos colocar esse raciocínio dentro do sistema.
+        <div class="dd">Vale ouvir também como vocês pesam andar, vista e posição.</div>
+      </div>
+      <div class="duvida">Dos portais que o sistema vai consultar, quais a Studio 76 usa de verdade no dia a dia?
+        <div class="dd">Na mesa: ImóvelWeb, Zap, Quinto Andar, Loft, Pilar, site da RE/MAX Brasil, NonStop, Chaves na Mão, VivaReal e OLX.</div>
+      </div>
+      <div class="duvida">O portal da RE/MAX Brasil pode liberar acesso aos dados pra nós? A Avalux está tentando o mesmo caminho com o Mozart.</div>
+      <div class="duvida">Ainda pendente desde 20/07: a <b>apresentação modelo</b> que os corretores da Studio 76 usam hoje. Sem ela não conseguimos gerar a saída no padrão da casa.</div>
+    </div>
+
+    <div class="fb" data-proj="ACM Builder">
+      <div class="fb-q">O que você achou deste projeto?</div>
+      <div class="fb-btns">
+        <button class="fb-thumb up" data-v="joia"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"/></svg>Joia</button>
+        <button class="fb-thumb down" data-v="joia_invertido"><svg class="i sm" viewBox="0 0 24 24"><path d="M17 14V2M9 18.12L10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"/></svg>Não curti</button>
+      </div>
+      <textarea class="fb-txt" placeholder="Quer escrever algo? Sugestão, dúvida, o que achou… (opcional)"></textarea>
+      <button class="fb-send">Enviar meu retorno</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Obrigado pelo retorno!</div>
+    </div>
+  </div>
+
+  <!-- ═══ DUE DILIGENCE ═══ -->
+  <div class="proj" id="dd">
+    <h2>Due Diligence <span class="badge b-dev"><span class="dot"></span>Em desenvolvimento</span></h2>
+    <div class="sub">Verifica se o imóvel está desimpedido pra venda, sem depender de o Dr. Wilton fazer tudo à mão.</div>
+    <div class="resp"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Responsável: Alex Fontes (Pandora) · usuário: Dr. Wilton Leem</div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Objetivo e situação</div>
+      <p>A IA lê a matrícula, monta o caso, identifica quais certidões precisam ser tiradas, classifica cada documento que chega e emite o parecer final — Apto ou Apto com ressalvas — com toda a pasta organizada pra auditoria.</p>
+      <div class="destaque">
+        <b>A dor está medida:</b> são <b>308 gestões ativas e 208 sem diligência</b>. Sozinho, o Dr. Wilton não fecha nem a coluna de até 30 dias. Por isso a métrica deste projeto passa a ser simples: <b>quantas diligências são concluídas por dia</b>.
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>O que evoluiu desde a última conversa</div>
+      <ul class="ev">
+        <li>Reunião com o Dr. Wilton em 27/07: o caminho real que ele percorre foi levantado ao vivo e virou um passo a passo de 15 etapas — é a base do modo guiado.</li>
+        <li>Três regras que estavam erradas no nosso entendimento foram corrigidas: buscar antecessores de <b>10 anos</b> (não 2), dois adquirentes no plural puxam os dois mesmo com separação de bens, e alerta de HIS por metragem e ano.</li>
+        <li>Fechamento do caso pronto no ambiente de testes: matrícula lida pela IA, certidão anexada classificada sozinha e parecer final automático.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Roadmap</div>
+      <ul class="rmap">
+        <li><span class="mk done">&#10003;</span><span>Leitura da matrícula pela IA e montagem do caso</span><span class="rx">Feito</span></li>
+        <li><span class="mk done">&#10003;</span><span>Cofre de documentos + parecer final automático</span><span class="rx">Feito</span></li>
+        <li><span class="mk doing">&#9679;</span><span>Modo guiado seguindo o passo a passo do Dr. Wilton</span><span class="rx">Em curso</span></li>
+        <li><span class="mk next">&#9675;</span><span>Emissão automática das certidões</span><span class="rx">A seguir</span></li>
+        <li><span class="mk next">&#9675;</span><span>Mudança para o Pandora OS, com acesso do jurídico</span><span class="rx">A seguir</span></li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Quanto isso economiza</div>
+      <p>Levantei o custo de cada certidão, uma por uma, e conferi no painel o que a Studio 76 gasta hoje com o <b>Plexi</b>.</p>
+      <div class="destaque">
+        <b>Hoje:</b> o Plexi é pós-pago e consumiu <b>R$ 1.795 nos últimos 30 dias</b> — cerca de <b>R$ 21.500 por ano</b>.<br>
+        <b>Com o nosso sistema:</b> cerca de <b>R$ 2.100 no primeiro ano</b> (já incluindo zerar as 208 gestões paradas) e <b>R$ 1.200 por ano</b> depois.<br>
+        <b>Economia de aproximadamente R$ 19.400 no primeiro ano</b> — e mais de R$ 20 mil por ano a partir do segundo.
+      </div>
+      <p>E vale a comparação completa: hoje esses R$ 21,5 mil por ano são pagos <b>e a fila continua com 208 casos parados</b>. Não é só trocar caro por barato — é pagar bem menos e resolver o que o gasto atual não resolve.</p>
+      <ul class="ev">
+        <li>Uma diligência completa, com dois proprietários, sai por cerca de <b>R$ 4,70</b> em consultas.</li>
+        <li>A <b>matrícula</b> passa a ser puxada automaticamente pelo portal dos Registradores — o emolumento continua o mesmo; some o trabalho manual.</li>
+        <li>O <b>número do IPTU</b>, que hoje é o passo mais trabalhoso do Dr. Wilton, passa a ser descoberto pelo endereço, inclusive em apartamento.</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Dúvidas / decisões que preciso de você</div>
+      <div class="duvida">O corretor também vai acessar a Due Diligence, ou fica só com gestor e jurídico?</div>
+      <div class="duvida">Com 208 gestões sem diligência, por onde atacamos primeiro: as mais antigas, as de maior valor, ou as que estão prestes a receber proposta?</div>
+      <div class="duvida"><b>Aumento do espaço do banco de dados — R$ 135 por mês (US$ 25).</b> O banco onde ficam os sistemas está com 386 MB de 500 MB usados, e só a atualização da base do ITBI já estoura o limite. Esse aumento leva o espaço de 500 MB para 8 GB e os arquivos de 1 GB para 100 GB — cobre o ITBI completo, a base do IPTU, o cofre de certidões da Due Diligence e o Pandora OS com clientes reais. É o único custo novo do projeto, e ele se paga várias vezes só com a economia do Plexi.</div>
+      <div class="duvida"><b>Segurança:</b> o <b>Elie ainda tem acesso ativo ao Plexi</b>. Como é pós-pago, qualquer consulta feita por ele é cobrada da Studio 76. Vale remover o usuário.</div>
+      <div class="duvida">O mês de R$ 1.795 no Plexi foi típico? Se puder me passar as faturas dos últimos meses, fecho a média e o número fica exato.</div>
+      <div class="duvida">O <b>Pipe Imóveis</b> já liberou a integração e a autenticação está funcionando. Falta só o caminho para ler a lista de estoque com o status de diligência — o suporte deles ficou de responder em até 48h.</div>
+    </div>
+
+    <div class="fb" data-proj="Due Diligence">
+      <div class="fb-q">O que você achou deste projeto?</div>
+      <div class="fb-btns">
+        <button class="fb-thumb up" data-v="joia"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"/></svg>Joia</button>
+        <button class="fb-thumb down" data-v="joia_invertido"><svg class="i sm" viewBox="0 0 24 24"><path d="M17 14V2M9 18.12L10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"/></svg>Não curti</button>
+      </div>
+      <textarea class="fb-txt" placeholder="Quer escrever algo? Sugestão, dúvida, o que achou… (opcional)"></textarea>
+      <button class="fb-send">Enviar meu retorno</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Obrigado pelo retorno!</div>
+    </div>
+  </div>
+
+  <!-- ═══ COMPARADOR ═══ -->
+  <div class="proj" id="comparador">
+    <h2>Comparador Gestões × ACM <span class="badge b-live"><span class="dot"></span>No ar (piloto)</span></h2>
+    <div class="sub">Compara o preço pedido de cada gestão com o valor do ACM e aponta onde vale investir em mídia.</div>
+    <div class="resp"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Responsável: Alex Fontes (Pandora)</div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Objetivo e status</div>
+      <p>Subir todas as gestões ativas da Studio 76 e, ao lado do preço pedido, mostrar o valor do ACM — pra ver de bater o olho quais imóveis estão bem precificados e merecem verba de anúncio, e quais estão fora da realidade de mercado.</p>
+      <p>O piloto está no ar. Com o ACM Builder entrando em construção, este projeto deixa de ser uma tela isolada: <b>os dois passam a ser a mesma área</b> — o ACM alimenta o comparador automaticamente, sem planilha no meio.</p>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Dúvidas / decisões que preciso de você</div>
+      <div class="duvida">Confirmar as faixas do semáforo: a partir de que distância entre preço pedido e ACM o imóvel deve acender o alerta?</div>
+    </div>
+
+    <div class="fb" data-proj="Comparador Gestões x ACM">
+      <div class="fb-q">O que você achou deste projeto?</div>
+      <div class="fb-btns">
+        <button class="fb-thumb up" data-v="joia"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"/></svg>Joia</button>
+        <button class="fb-thumb down" data-v="joia_invertido"><svg class="i sm" viewBox="0 0 24 24"><path d="M17 14V2M9 18.12L10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"/></svg>Não curti</button>
+      </div>
+      <textarea class="fb-txt" placeholder="Quer escrever algo? Sugestão, dúvida, o que achou… (opcional)"></textarea>
+      <button class="fb-send">Enviar meu retorno</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Obrigado pelo retorno!</div>
+    </div>
+  </div>
+
+  <!-- ═══ CONTROLE DE GESTÕES ═══ -->
+  <div class="proj" id="gestoes">
+    <h2>Controle de Gestões <span class="badge b-plan"><span class="dot"></span>Planejamento</span></h2>
+    <div class="sub">O processo comercial dos corretores, da assinatura do contrato até a proposta aceita.</div>
+    <div class="resp"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Responsável: Alex Fontes (Pandora)</div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Objetivo e status</div>
+      <p>Acompanhar cada gestão do começo ao fim e mostrar ao gestor onde cada corretor está travado. Segue aguardando a base do Pandora OS, que já está no ar — então o projeto pode sair do papel assim que definirmos a ordem com você.</p>
+      <p>Com o ACM e a Due Diligence entrando na mesma plataforma, o acompanhamento fica completo: dá pra ver a gestão que não tem avaliação, a que não tem diligência e a que está com preço fora do mercado, tudo na mesma tela.</p>
+    </div>
+
+    <div class="block">
+      <div class="lbl"><svg class="i sm" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Dúvidas / decisões que preciso de você</div>
+      <div class="duvida">O que o relatório do gestor precisa mostrar no dia a dia? Quais etapas acompanhar e quais números você quer ver de cara.</div>
+      <div class="duvida"><b>A pergunta principal desta reunião:</b> qual a ordem de prioridade entre Due Diligence, ACM Builder e Controle de Gestões? O que você quer ver funcionando primeiro com a equipe?</div>
+    </div>
+
+    <div class="fb" data-proj="Controle de Gestões">
+      <div class="fb-q">O que você achou deste projeto?</div>
+      <div class="fb-btns">
+        <button class="fb-thumb up" data-v="joia"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"/></svg>Joia</button>
+        <button class="fb-thumb down" data-v="joia_invertido"><svg class="i sm" viewBox="0 0 24 24"><path d="M17 14V2M9 18.12L10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"/></svg>Não curti</button>
+      </div>
+      <textarea class="fb-txt" placeholder="Quer escrever algo? Sugestão, dúvida, o que achou… (opcional)"></textarea>
+      <button class="fb-send">Enviar meu retorno</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Obrigado pelo retorno!</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Pauta gerada em 28/07/2026 · RE/MAX Studio 76 · atualizável até a reunião.<br>
+    Documento de apresentação — alguns sistemas citados abrem com login.
+  </div>
+</div>
+
+<script>
+const SB_URL='https://sobmjqounukzbplrmhkr.supabase.co';
+const SB_KEY='sb_publishable_o5fTXnmp8hhp76WymPJ_MQ_MuJUhvfY';
+const PAUTA='2026-07-29';
+let sbc=null;
+try{ if(typeof supabase!=='undefined') sbc=supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.error(e); }
+
+document.querySelectorAll('.fb').forEach(fb=>{
+  let sel=null;
+  fb.querySelectorAll('.fb-thumb').forEach(b=>b.addEventListener('click',()=>{
+    sel = (sel===b.dataset.v) ? null : b.dataset.v;
+    fb.querySelectorAll('.fb-thumb').forEach(x=>x.classList.remove('on'));
+    if(sel) b.classList.add('on');
+  }));
+  fb.querySelector('.fb-send').addEventListener('click',async()=>{
+    const txt=fb.querySelector('.fb-txt').value.trim();
+    if(!sel && !txt){ return; }
+    const send=fb.querySelector('.fb-send'); send.disabled=true; send.textContent='Enviando…';
+    try{
+      const {error}=await sbc.from('pauta_feedback').insert({pauta:PAUTA, projeto:fb.dataset.proj, avaliacao:sel, comentario:txt||null});
+      if(error) throw error;
+      fb.querySelectorAll('.fb-q,.fb-btns,.fb-txt,.fb-send').forEach(x=>x.style.display='none');
+      fb.querySelector('.fb-done').style.display='flex';
+    }catch(e){
+      console.error(e); send.disabled=false; send.textContent='Não foi — tentar de novo';
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxo do usuário — ACM no Pandora OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--brand-orange:#ff6600;--brand-orange-light:#ff8533;--bg:#f3f4f7;--surface:#ffffff;--surface2:#f0f1f4;--surface3:#e6e8ee;--text:#1a1d23;--muted:#6b7280;--border:rgba(0,0,0,.10);--accent:var(--brand-orange);--accent-pale:rgba(255,102,0,.11);--accent-sel:rgba(255,102,0,.08);--accent-line:rgba(255,102,0,.38);--shadow-card:0 1px 3px rgba(0,0,0,.07),0 10px 24px -14px rgba(0,0,0,.22);--success:#16a34a;--warn:#d97706;--info:#2563eb;--success-pale:rgba(22,163,74,.12);--warn-pale:rgba(217,119,6,.13);--info-pale:rgba(37,99,235,.11);--font-brand:'Montserrat',sans-serif;--font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--radius-md:8px;--radius-lg:10px;--radius-full:9999px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:12.5px;line-height:1.4;padding:12px 18px 10px;display:flex;flex-direction:column;gap:9px;overflow:hidden;}
+svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo .mark{width:31px;height:31px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--brand-orange-light));display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px -4px rgba(255,102,0,.5);flex-shrink:0;}
+.logo .mark svg{width:17px;height:17px;stroke:#fff;stroke-width:2.2;}
+h1{font-family:var(--font-brand);font-size:17px;font-weight:800;letter-spacing:-.015em;line-height:1.1;}
+.sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.sub b{color:var(--text);font-weight:600;}
+.legend{display:flex;align-items:center;gap:12px;font-size:10.5px;color:var(--muted);}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.sq{width:11px;height:11px;border-radius:3px;flex-shrink:0;display:block;}
+.sq-passo{background:var(--surface);border:1px solid rgba(0,0,0,.22);}
+.sq-perg{background:var(--accent-sel);border:1px dashed var(--accent-line);}
+.sq-fim{background:var(--success-pale);border:1px solid rgba(22,163,74,.35);}
+
+.body{flex:1;min-height:0;display:flex;flex-direction:column;gap:9px;}
+.lane{display:grid;grid-template-columns:88px 1fr;gap:10px;}
+.lane.flow{flex:1;min-height:0;}
+.lanelbl{display:flex;flex-direction:column;justify-content:center;gap:5px;}
+.lanelbl .ico{width:23px;height:23px;border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.lanelbl .ico svg{width:13px;height:13px;}
+.ico.c{background:var(--accent-sel);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-line);}
+.ico.g{background:var(--info-pale);color:var(--info);box-shadow:inset 0 0 0 1px rgba(37,99,235,.28);}
+.lanelbl .tag{font-family:var(--font-brand);font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:1.2;}
+.tag.c{color:var(--accent);}
+.tag.g{color:var(--info);}
+.lanelbl .hint{font-size:10px;color:var(--muted);line-height:1.3;}
+
+.rows{display:flex;flex-direction:column;gap:24px;min-height:0;flex:1;justify-content:space-evenly;}
+.row{flex:0 0 auto;display:grid;gap:22px;position:relative;}
+.row.r1{grid-template-columns:repeat(5,1fr);}
+.row.r2{grid-template-columns:repeat(4,1fr);}
+
+.step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:9px 11px;display:flex;flex-direction:column;gap:5px;position:relative;min-height:0;}
+.step.key{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line),var(--shadow-card);}
+.step.end{background:var(--success-pale);border-color:rgba(22,163,74,.3);box-shadow:none;}
+.st-n{display:flex;align-items:center;gap:7px;}
+.st-n i{width:18px;height:18px;border-radius:50%;background:var(--surface3);color:var(--muted);font-family:var(--font-brand);font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;font-style:normal;flex-shrink:0;}
+.step.key .st-n i{background:var(--accent);color:#fff;}
+.step.end .st-n i{background:var(--success);color:#fff;}
+.st-t{font-family:var(--font-brand);font-size:12px;font-weight:700;letter-spacing:-.01em;line-height:1.2;}
+.st-d{font-size:10.5px;color:var(--muted);line-height:1.38;}
+.st-d b{color:var(--text);font-weight:600;}
+
+.ask{background:var(--accent-sel);border:1px dashed var(--accent-line);border-radius:var(--radius-md);padding:6px 8px;font-size:10px;line-height:1.34;color:var(--text);margin-top:auto;display:flex;gap:6px;}
+.ask svg{width:12px;height:12px;stroke:var(--accent);flex-shrink:0;margin-top:1px;}
+.ask b{font-family:var(--font-brand);font-weight:700;color:var(--accent);}
+
+.step::after{content:"";position:absolute;top:50%;right:-22px;width:22px;height:2px;background:var(--border);}
+.step::before{content:"";position:absolute;top:50%;right:-22px;transform:translate(0,-4.5px);border-left:7px solid rgba(0,0,0,.22);border-top:5px solid transparent;border-bottom:5px solid transparent;margin-right:-1px;left:auto;}
+.step.last::after,.step.last::before{display:none;}
+.wrap{position:absolute;right:2px;bottom:-19px;display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;font-family:var(--font-brand);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}
+.wrap svg{width:13px;height:13px;}
+
+.loop{margin-top:auto;align-self:flex-start;display:flex;align-items:center;gap:6px;background:var(--accent-sel);border:1px solid var(--accent-line);border-radius:var(--radius-full);padding:3px 9px 3px 7px;font-size:9px;font-weight:800;font-family:var(--font-brand);color:var(--accent);letter-spacing:.04em;text-transform:uppercase;}
+.loop svg{width:12px;height:12px;stroke:var(--accent);flex-shrink:0;}
+
+.lane.g{flex-shrink:0;}
+.gband{background:var(--surface);border:1px solid var(--border);border-left:3px solid rgba(37,99,235,.34);border-radius:var(--radius-lg);padding:8px 11px;display:grid;grid-template-columns:repeat(4,1fr);gap:13px;}
+.gitem{display:flex;flex-direction:column;gap:1px;font-size:10.2px;color:var(--muted);line-height:1.34;position:relative;padding-left:13px;}
+.gitem::before{content:"";position:absolute;left:0;top:5px;width:7px;height:7px;border-radius:50%;background:var(--info-pale);box-shadow:inset 0 0 0 2px var(--info);}
+.gitem .gk{font-family:var(--font-brand);font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--info);}
+.gitem b{color:var(--text);font-weight:600;}
+
+.foot{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:10px;color:var(--muted);flex-shrink:0;}
+.foot .rules{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.chip{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-full);padding:2.5px 9px;font-size:9.5px;}
+.chip.open{background:var(--warn-pale);border-color:rgba(217,119,6,.3);color:#9a5b06;font-weight:600;}
+.foot .src{font-family:var(--font-brand);font-weight:600;white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="logo">
+    <div class="mark"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="19" cy="17" r="3"/></svg></div>
+    <div>
+      <h1>ACM no Pandora OS — o caminho do corretor</h1>
+      <div class="sub">Fluxograma vivo · da primeira tela à apresentação · <b>28/07/2026</b> · modo guiado, um foco por tela · <b>este caminho é o do apartamento</b></div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i class="sq sq-passo"></i> Passo do assistente</span>
+    <span><i class="sq sq-perg"></i> O sistema propõe e pergunta</span>
+    <span><i class="sq sq-fim"></i> Entrega</span>
+  </div>
+</div>
+
+<div class="body">
+
+  <div class="lane flow">
+    <div class="lanelbl">
+      <div class="ico c"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="tag c">O corretor</div>
+      <div class="hint">faz a avaliação, passo a passo</div>
+    </div>
+
+    <div class="rows">
+
+      <!-- Linha 1 -->
+      <div class="row r1">
+        <div class="step">
+          <div class="st-n"><i>1</i><span class="st-t">O imóvel</span></div>
+          <div class="st-d">Abre uma avaliação nova e informa o <b>endereço</b>, a área e o estado de conservação. Se o imóvel já está no <b>Pipe</b>, chega preenchido — ele completa só o que falta, <b>uma vez</b>.</div>
+          <div class="ask"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>O estado <b>pode ficar em branco</b> — o sistema explica a vantagem, mas não trava.</span></div>
+        </div>
+
+        <div class="step key">
+          <div class="st-n"><i>2</i><span class="st-t">As vendas do prédio</span></div>
+          <div class="st-d">O sistema busca no <b>ITBI (2019–2026)</b> o que de fato foi vendido naquele edifício. <b>É o edifício do imóvel que manda</b> — o valor sai daqui, não do preço pedido.</div>
+          <div class="ask"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.4 17a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span>Único caso problemático: <b>prédio sem histórico</b>. Aí o alvo passa a vir dos similares, no passo 6.</span></div>
+        </div>
+
+        <div class="step key">
+          <div class="st-n"><i>3</i><span class="st-t">Dois grupos, não um</span></div>
+          <div class="st-d">As vendas se separam em <b>reformado</b> e <b>original / a reformar</b>. Juntar tudo numa média só achata o valor.</div>
+          <div class="ask"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg><span>O sistema <b>propõe</b> a separação e pede confirmação. O corretor move o que estiver errado e diz <b>como sabe</b>: proprietário · zelador · anúncio · deduzido.</span></div>
+        </div>
+
+        <div class="step key">
+          <div class="st-n"><i>4</i><span class="st-t">O valor-alvo</span></div>
+          <div class="st-d"><b>Mediana</b> do grupo do imóvel — não média, para uma venda estranha não distorcer. Corrigida pela valorização do bairro, <b>com a conta à vista</b>.</div>
+          <div class="ask"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg><span>Sai do <b>próprio edifício</b> e já vale. O que vem depois <b>justifica</b>, não muda o alvo.</span></div>
+        </div>
+
+        <div class="step key last">
+          <div class="st-n"><i>5</i><span class="st-t">Concorrentes, um a um</span></div>
+          <div class="st-d">Um anúncio por vez: <b>serve ou não serve</b>, em dois botões grandes. O alvo fica visível, mostrando a distância — é o que ensina o corretor a escolher.</div>
+          <div class="loop"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span>repete até acabar</span></div>
+          <div class="wrap"><span>continua abaixo</span><svg viewBox="0 0 24 24"><path d="M17 4v10a4 4 0 01-4 4H5"/><path d="M9 14l-4 4 4 4"/></svg></div>
+        </div>
+      </div>
+
+      <!-- Linha 2 -->
+      <div class="row r2">
+        <div class="step key">
+          <div class="st-n"><i>6</i><span class="st-t">Condomínios similares</span></div>
+          <div class="st-d">São os concorrentes escolhidos que revelam <b>quais prédios de fato competem</b>. Desses edifícios o sistema puxa <b>os vendidos de cada um</b> — que entram para <b>justificar</b> o alvo, não para mudá-lo.</div>
+          <div class="ask"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/></svg><span>O sistema <b>mostra os prédios que encontrou e pergunta</b> quais entram. Nunca inclui calado. <b>Se o prédio do imóvel não tiver histórico</b>, é aqui que o alvo nasce.</span></div>
+        </div>
+
+        <div class="step key">
+          <div class="st-n"><i>7</i><span class="st-t">A revisão</span></div>
+          <div class="st-d">Tudo junto e marcado pela origem: <b>o que o sistema ofereceu</b> e <b>o que o corretor incluiu por link</b>. Ele decide quais ficam de fato e aprova.</div>
+          <div class="ask"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg><span><b>Colar o link de um anúncio</b> que o sistema não trouxe: a página é lida e os campos vêm preenchidos. Nada entra na conta sem passar por aqui.</span></div>
+        </div>
+
+        <div class="step">
+          <div class="st-n"><i>8</i><span class="st-t">Montar a apresentação</span></div>
+          <div class="st-d">Só o que é daquele imóvel: <b>subir a imagem</b>, se tiver, e <b>escolher o que entra no arquivo</b>. Cor e marca são fixas da rede.</div>
+          <div class="ask"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Foto e dados do corretor <b>já vêm do cadastro dele</b>; os do imóvel, do <b>Pipe</b>. Ninguém redigita a cada avaliação.</span></div>
+        </div>
+
+        <div class="step end last">
+          <div class="st-n"><i>9</i><span class="st-t">PDF entregue</span></div>
+          <div class="st-d">O corretor sai com a apresentação pronta para a conversa com o proprietário. <b>PPTX fica para depois</b>, e só se não atrapalhar.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="lane g">
+    <div class="lanelbl">
+      <div class="ico g"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+      <div class="tag g">O gestor</div>
+      <div class="hint">em paralelo, sem interromper</div>
+    </div>
+    <div class="gband">
+      <div class="gitem"><span class="gk">Passos 1 a 3</span><span>Vê a avaliação <b>nascer</b>: quem começou, qual imóvel, quando.</span></div>
+      <div class="gitem"><span class="gk">Passos 4 e 6</span><span>Vê <b>o alvo</b>, quantas vendas do prédio o sustentaram e quais similares o justificam.</span></div>
+      <div class="gitem"><span class="gk">Passos 5 e 7</span><span>Vê <b>o quanto a seleção se afastou do alvo</b> e o que entrou por link, fora da oferta do sistema.</span></div>
+      <div class="gitem"><span class="gk">Passos 8 e 9</span><span>Vê o que <b>virou apresentação entregue</b> e o que parou no meio.</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <div class="rules">
+    <b style="color:var(--text);font-family:var(--font-brand);">Regras em toda tela:</b>
+    <span class="chip">um foco por vez</span>
+    <span class="chip">botões grandes — corretores idosos</span>
+    <span class="chip">o sistema propõe, nunca decide sozinho</span>
+    <span class="chip">mediana, nunca média</span>
+    <span class="chip open">casa e cobertura: caminho próprio, a definir</span>
+  </div>
+  <div class="src">Fonte: 00_DECISOES_ALEX.md, seções 2 e 3</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bairros — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260728a">
+  <style>
+    /* ── Bairros — Rev 6.1 do mockup-bairros.html (aprovado 26/07):
+       cores sóbrias (ponto + faixa de 3px, sem etiqueta colorida), máx. 4 por
+       linha com cartões em 1fr preenchendo a largura toda, nome quebra em duas
+       linhas em vez de cortar, filtro de Zona em pílulas. ── */
+    .contacts-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+    .contacts-toolbar input{max-width:340px}
+    .count-lbl{font-size:12px;color:var(--muted)}
+    .filtros{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+    .fpill{font-family:var(--font-brand);font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:.15s;display:inline-flex;align-items:center;gap:6px}
+    .fpill:hover{color:var(--text);border-color:var(--muted)}
+    .fpill.on{border-color:var(--accent-line);background:var(--accent-sel);color:var(--accent)}
+    .fpill .fp-n{font-size:10px;font-weight:700;opacity:.7;font-variant-numeric:tabular-nums}
+    /* Regra de layout do sistema (03_UXUI seção D): colunas em 1fr, sem max-width */
+    .contacts-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch;width:100%}
+    @media(max-width:1240px){.contacts-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:980px){.contacts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.contacts-grid{grid-template-columns:1fr}}
+    .b-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:border-color .15s,background .15s;min-height:78px;position:relative;overflow:hidden}
+    .b-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--zc,transparent);opacity:.65}
+    .b-card:hover{border-color:var(--accent);background:var(--surface2)}
+    .b-ava{width:36px;height:36px;border-radius:9px;background:var(--surface3);color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+    .b-ava svg{width:18px;height:18px}
+    .b-card:hover .b-ava{background:var(--accent-pale);color:var(--accent)}
+    .b-info{flex:1;min-width:0}
+    .b-nome{font-weight:600;font-size:14px;line-height:1.28;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
+    .b-meta{font-size:11.5px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .b-zona{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
+    .b-dot{width:7px;height:7px;border-radius:50%;background:var(--zc,var(--border));flex-shrink:0}
+    .b-sep{opacity:.45}
+    .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px}
+    .modal-close:hover{color:var(--text)}
+    .form-group{margin-bottom:12px}
+    .form-group label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+    .field-hint{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+    /* Confirmação de exclusão DENTRO da janela (nada de alerta cinza do navegador) */
+    .confirm-box{display:none;border:1px solid rgba(239,68,68,.34);background:rgba(239,68,68,.08);border-radius:9px;padding:12px;margin-top:14px}
+    .confirm-box.show{display:block}
+    .confirm-box .cb-tit{font-family:var(--font-brand);font-size:13px;font-weight:700;margin-bottom:4px}
+    .confirm-box .cb-txt{font-size:12px;color:var(--muted);margin-bottom:10px}
+    .confirm-box .cb-acoes{display:flex;gap:8px;justify-content:flex-end}
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260728a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Bairros</span>
+    <div class="sb-topbar-right">
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ Novo bairro</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="contacts-toolbar">
+      <input type="text" id="searchInput" placeholder="Buscar bairro ou região..." oninput="render()">
+      <span class="count-lbl" id="countLbl"></span>
+    </div>
+    <div class="filtros" id="filtros"></div>
+    <div id="conteudo"><div class="loading"><div class="spinner"></div> Carregando...</div></div>
+  </div>
+</div>
+
+<!-- ── Modal Novo/Editar Bairro ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modalTitulo">Novo bairro</div>
+      <button class="modal-close" onclick="fecharModal()">×</button>
+    </div>
+    <!-- Erro que não é de campo (falhou gravar): faixa no topo da janela -->
+    <div class="modal-error-bar" id="errTopo" role="alert"></div>
+    <div class="form-group">
+      <label>Nome *</label>
+      <input type="text" id="fNome" placeholder="Ex.: Jardim Paulista" oninput="limparErro()">
+      <!-- Aviso de validação junto do campo (padrão do sistema) -->
+      <div class="field-error" id="errNome" role="alert"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Cidade</label><input type="text" id="fCidade" value="São Paulo"></div>
+      <div class="form-group"><label>Zona (opcional)</label>
+        <select id="fZona">
+          <option value="">— não definida —</option>
+          <option>Zona Sul</option><option>Zona Oeste</option><option>Zona Norte</option><option>Zona Leste</option><option>Centro</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Região (opcional)</label>
+      <input type="text" id="fRegiao" list="regioesList" placeholder="Ex.: Jardins">
+      <datalist id="regioesList"></datalist>
+      <div class="field-hint">Agrupamento comercial ("Jardins", "Ibirapuera") — buscar pela região traz todos os bairros dela.</div>
+    </div>
+    <!-- Confirmação de exclusão dentro da própria janela -->
+    <div class="confirm-box" id="confirmDel">
+      <div class="cb-tit">Excluir este bairro?</div>
+      <div class="cb-txt">Imobiliárias que usam este bairro perdem só o vínculo com ele — nada mais é apagado.</div>
+      <div class="cb-acoes">
+        <button class="btn btn-ghost btn-sm" onclick="cancelDel()">Cancelar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmarExcluir()">Sim, excluir</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnDel" onclick="pedirExcluir()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnSalvar" onclick="salvar()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script>
+// ── Estado ──────────────────────────────────────────────────────────────────
+let bairros    = [];
+let editId     = null;
+let salvando   = false;   // guarda anti-duplo-clique
+let filtroZona = '';
+
+// Cores sóbrias (Rev 6.1 aprovada): usadas só em traços finos (ponto + faixa),
+// nunca como fundo de etiqueta.
+const ZONA_COR = { 'Zona Sul':'#6b8fd4', 'Zona Oeste':'#9b8fd0', 'Zona Norte':'#5fae9e', 'Zona Leste':'#c2a765', 'Centro':'#c98c6b' };
+const ZONAS    = ['Zona Sul','Zona Oeste','Zona Norte','Zona Leste','Centro'];
+const ICO_PIN    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+const ICO_SEARCH = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+const ICO_ERR    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
+const TOAST_ICO = {
+  '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+  '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  '🗑️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7a7d82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>'
+};
+TOAST_ICO['⚠'] = TOAST_ICO['⚠️']; TOAST_ICO['🗑'] = TOAST_ICO['🗑️'];
+function toast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  let icon = '', text = String(msg == null ? '' : msg);
+  for (const k in TOAST_ICO) { if (text.indexOf(k) === 0) { icon = TOAST_ICO[k]; text = text.slice(k.length).trim(); break; } }
+  t.innerHTML = icon + '<span style="vertical-align:middle">' + text.replace(/</g,'&lt;') + '</span>';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function norm(s) { return String(s == null ? '' : s).trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
+// ── Init / carregar ──────────────────────────────────────────────────────────
+async function init() {
+  await initSupabase();
+  await carregar();
+}
+async function carregar() {
+  const { data, error } = await db().from('bairros').select('*').order('nome');
+  if (error) {
+    document.getElementById('conteudo').innerHTML =
+      '<div class="empty-state"><p class="empty-state-title">Erro ao carregar</p><p class="empty-state-hint">' + esc(error.message) + '</p></div>';
+    return;
+  }
+  bairros = data || [];
+  atualizarRegioesDatalist();
+  render();
+}
+function atualizarRegioesDatalist() {
+  const dl = document.getElementById('regioesList'); if (!dl) return;
+  const set = [...new Set(bairros.map(b => b.regiao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
+  dl.innerHTML = set.map(r => '<option value="' + esc(r).replace(/"/g,'&quot;') + '">').join('');
+}
+
+// ── Filtro de Zona em pílulas ────────────────────────────────────────────────
+// Pílulas montadas por JS + addEventListener + textContent — nada de texto
+// interpolado dentro de onclick (lição do defeito D-1).
+function renderFiltros() {
+  const el = document.getElementById('filtros');
+  el.innerHTML = '';
+  if (!bairros.length) return;
+  const pilula = (rotulo, valor, ligada, n, cor) => {
+    const s = document.createElement('button');
+    s.type = 'button';
+    s.className = 'fpill' + (ligada ? ' on' : '');
+    if (cor) {
+      const dot = document.createElement('span');
+      dot.className = 'b-dot'; dot.style.background = cor;
+      s.appendChild(dot);
+    }
+    s.appendChild(document.createTextNode(rotulo + ' '));
+    const fn = document.createElement('span'); fn.className = 'fp-n'; fn.textContent = n;
+    s.appendChild(fn);
+    s.addEventListener('click', () => { filtroZona = (filtroZona === valor ? '' : valor); render(); });
+    el.appendChild(s);
+  };
+  pilula('Todas', '', filtroZona === '', bairros.length, null);
+  ZONAS.forEach(z => {
+    const n = bairros.filter(b => b.zona === z).length;
+    if (!n) return;
+    pilula(z.replace('Zona ', ''), z, filtroZona === z, n, ZONA_COR[z]);
+  });
+  // "Sem zona" só aparece se houver bairro sem zona — vira faxina de cadastro
+  const semZona = bairros.filter(b => !b.zona).length;
+  if (semZona) pilula('Sem zona', '__sem', filtroZona === '__sem', semZona, null);
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const el = document.getElementById('conteudo'), cl = document.getElementById('countLbl');
+  renderFiltros();
+  if (!bairros.length) {
+    cl.textContent = '';
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">${ICO_PIN.replace('<svg','<svg width="40" height="40"')}</div>
+      <p class="empty-state-title">Nenhum bairro cadastrado ainda</p>
+      <p class="empty-state-hint">Os bairros alimentam a área de atuação das imobiliárias e o endereço dos imóveis.</p>
+      <p style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="openModal()">+ Novo bairro</button></p></div>`;
+    return;
+  }
+  const q = norm(document.getElementById('searchInput').value || '');
+  let lista = bairros.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+  if (filtroZona === '__sem') lista = lista.filter(b => !b.zona);
+  else if (filtroZona) lista = lista.filter(b => b.zona === filtroZona);
+  // Região é sinônimo de busca: "jardins" traz Jardim América/Paulista/Europa
+  if (q) lista = lista.filter(b =>
+    norm(b.nome).includes(q) || norm(b.zona).includes(q) || norm(b.cidade).includes(q) || norm(b.regiao).includes(q));
+  cl.textContent = lista.length + (lista.length === 1 ? ' bairro' : ' bairros');
+  if (!lista.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">${ICO_SEARCH}</div>
+      <p class="empty-state-title">Nenhum bairro encontrado</p>
+      <p class="empty-state-hint">Tente outro termo${filtroZona ? ' ou toque em "Todas" para tirar o filtro de zona' : ''}.</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="contacts-grid">${lista.map(cardHTML).join('')}</div>`;
+}
+function cardHTML(b) {
+  const cor  = ZONA_COR[b.zona] || '';
+  const zona = b.zona ? `<span class="b-sep">·</span><span class="b-zona"><span class="b-dot"></span>${esc(b.zona)}</span>` : '';
+  const reg  = b.regiao ? `<span class="b-sep">·</span><span>${esc(b.regiao)}</span>` : '';
+  return `<div class="b-card" style="--zc:${cor}" onclick="openModal('${b.id}')">
+    <div class="b-ava">${ICO_PIN}</div>
+    <div class="b-info">
+      <div class="b-nome">${esc(b.nome)}</div>
+      <div class="b-meta"><span>${esc(b.cidade || '')}</span>${zona}${reg}</div>
+    </div>
+  </div>`;
+}
+
+// ── Validação junto do campo (padrão do sistema) ────────────────────────────
+// Texto do banco entra por textContent — nunca vira HTML nem código (lição do D-1).
+function mostrarErroNome(prefixo, dup) {
+  const inp = document.getElementById('fNome'), box = document.getElementById('errNome');
+  inp.classList.add('err');
+  box.innerHTML = ICO_ERR;
+  const sp = document.createElement('span');
+  if (dup) {
+    sp.appendChild(document.createTextNode('Já existe o bairro '));
+    const b = document.createElement('b'); b.textContent = dup.nome; sp.appendChild(b);
+    sp.appendChild(document.createTextNode(' em ' + (dup.cidade || 'São Paulo') + (dup.zona ? ' (' + dup.zona + ')' : '') + '.'));
+    if (dup.id) {
+      sp.appendChild(document.createTextNode(' Use outro nome ou '));
+      const a = document.createElement('span'); a.className = 'fe-link'; a.textContent = 'abra o que já existe';
+      a.addEventListener('click', () => irParaExistente(dup.id));
+      sp.appendChild(a);
+      sp.appendChild(document.createTextNode('.'));
+    }
+  } else {
+    sp.textContent = prefixo;
+  }
+  box.appendChild(sp);
+  box.classList.add('show');
+  inp.focus();
+  if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function limparErro() {
+  document.getElementById('fNome').classList.remove('err');
+  const box = document.getElementById('errNome'); box.classList.remove('show'); box.innerHTML = '';
+}
+function errTopoMostrar(msg) {
+  const bar = document.getElementById('errTopo');
+  bar.innerHTML = ICO_ERR;
+  const sp = document.createElement('span');
+  sp.appendChild(document.createTextNode('Não deu para salvar agora — ' + msg + ' '));
+  const a = document.createElement('span'); a.className = 'fe-link'; a.textContent = 'Tentar de novo';
+  a.addEventListener('click', () => { errTopoLimpar(); salvar(); });
+  sp.appendChild(a);
+  bar.appendChild(sp);
+  bar.classList.add('show');
+}
+function errTopoLimpar() { const bar = document.getElementById('errTopo'); bar.classList.remove('show'); bar.innerHTML = ''; }
+function irParaExistente(id) {
+  fecharModal();
+  setTimeout(() => openModal(id), 120);
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  editId = (typeof id === 'string') ? id : null;
+  const b = editId ? bairros.find(x => x.id === editId) : null;
+  document.getElementById('modalTitulo').textContent = b ? 'Editar bairro' : 'Novo bairro';
+  document.getElementById('fNome').value = b?.nome || '';
+  limparErro(); errTopoLimpar(); cancelDel();
+  document.getElementById('fCidade').value = b?.cidade || 'São Paulo';
+  document.getElementById('fZona').value = b?.zona || '';
+  document.getElementById('fRegiao').value = b?.regiao || '';
+  document.getElementById('btnDel').style.display = b ? '' : 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fNome').focus(), 50);
+}
+function fecharModal() { document.getElementById('modalOverlay').classList.remove('open'); editId = null; cancelDel(); }
+
+// ── CRUD ─────────────────────────────────────────────────────────────────────
+async function salvar() {
+  if (salvando) return;
+  errTopoLimpar();
+  const nome = document.getElementById('fNome').value.trim();
+  if (!nome) { mostrarErroNome('Escreva o nome do bairro para poder salvar.'); return; }
+  const cidade = document.getElementById('fCidade').value.trim() || 'São Paulo';
+  // duplicado (unique nome+cidade) — aviso junto do campo, com atalho para o existente
+  const dup = bairros.find(b => b.id !== editId && norm(b.nome) === norm(nome) && norm(b.cidade || 'São Paulo') === norm(cidade));
+  if (dup) { mostrarErroNome('', dup); return; }
+
+  salvando = true;
+  const btn = document.getElementById('btnSalvar'); btn.style.opacity = '.6';
+  try {
+    const payload = {
+      nome, cidade,
+      zona:   document.getElementById('fZona').value || null,
+      regiao: document.getElementById('fRegiao').value.trim() || null,
+      updated_at: new Date().toISOString()
+    };
+    let error;
+    if (editId) ({ error } = await db().from('bairros').update(payload).eq('id', editId));
+    else        ({ error } = await db().from('bairros').insert(payload));
+    if (error) {
+      if (error.code === '23505') { mostrarErroNome('', { id: null, nome, cidade }); return; }
+      errTopoMostrar(error.message + '.');
+      return;
+    }
+    toast(editId ? '✅ Bairro salvo' : '✅ Bairro criado');
+    fecharModal();
+    await carregar();
+  } finally { salvando = false; btn.style.opacity = '1'; }
+}
+// Exclusão: confirmação dentro da própria janela (padrão aprovado — sem alerta do navegador)
+function pedirExcluir() { document.getElementById('confirmDel').classList.add('show'); }
+function cancelDel() { const c = document.getElementById('confirmDel'); if (c) c.classList.remove('show'); }
+async function confirmarExcluir() {
+  if (!editId) return;
+  const { error } = await db().from('bairros').delete().eq('id', editId);
+  if (error) { errTopoMostrar(error.message + '.'); cancelDel(); return; }
+  toast('🗑️ Bairro excluído');
+  fecharModal();
+  await carregar();
+}
+
+// ── Start ────────────────────────────────────────────────────────────────────
+init().catch(e => {
+  document.getElementById('conteudo').innerHTML =
+    '<div class="empty-state"><p class="empty-state-title">Falha ao conectar</p><p class="empty-state-hint">' + esc(e.message) + '</p></div>';
+});
+
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarefas — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260713h">
+  <style>
+    /* ── Tarefas (3.3) ── */
+    .tf-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+    .tf-filters { display:flex; gap:7px; flex-wrap:wrap; }
+    .tf-chip { font-size:12px; padding:6px 13px; border-radius:9999px; border:1px solid var(--border); color:var(--muted); cursor:pointer; background:transparent; transition:.15s; }
+    .tf-chip.on { background:var(--accent-pale); border-color:var(--accent); color:var(--accent); font-weight:600; }
+    .tf-search { max-width:220px; }
+
+    .tf-group-h { display:flex; align-items:center; gap:8px; margin:18px 0 8px; font-family:var(--font-brand); font-size:12px; letter-spacing:.1em; text-transform:uppercase; font-weight:800; }
+    .tf-group-h .ic { width:15px; height:15px; }
+    .tf-group-h .count { color:var(--muted); font-weight:600; letter-spacing:0; }
+    .g-venc { color:var(--danger); } .g-hoje { color:var(--info); } .g-prox { color:var(--text); } .g-sem { color:var(--muted); } .g-done { color:var(--success); }
+    .tf-group-h.clk { cursor:pointer; user-select:none; }
+
+    .tf-task { display:flex; align-items:flex-start; gap:12px; padding:11px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; background:var(--surface); transition:border-color .15s; }
+    .tf-task:hover { border-color:var(--accent); }
+    .tf-task.venc { border-left:3px solid var(--danger); }
+    .tf-task.hoje { border-left:3px solid var(--info); }
+    .tf-task.done { opacity:.5; }
+    .tf-chk { width:20px; height:20px; border-radius:6px; border:2px solid var(--muted); flex-shrink:0; margin-top:1px; cursor:pointer; position:relative; }
+    .tf-chk.on { background:var(--success); border-color:var(--success); }
+    .tf-chk.on::after { content:""; position:absolute; left:6px; top:2px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+    .tf-body { flex:1; min-width:0; }
+    .tf-txt { font-size:14px; margin-bottom:5px; word-break:break-word; }
+    .tf-task.done .tf-txt { text-decoration:line-through; }
+    .tf-meta { display:flex; align-items:center; gap:9px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+    .tf-when.late { color:var(--danger); font-weight:600; }
+    .tf-when.today { color:var(--info); font-weight:600; }
+    .tf-tag { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:9999px; font-size:11px; font-weight:600; cursor:pointer; }
+    .tf-tag .arr { opacity:.6; }
+    .tf-del { color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; margin-left:auto; background:none; border:none; }
+    .tf-del:hover { color:var(--danger); }
+
+    /* modal vínculo */
+    .tf-pick { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:8px; }
+    .tf-pt { font-size:12px; padding:7px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); cursor:pointer; }
+    .tf-pt.on { border-color:var(--accent); background:var(--accent-pale); color:var(--accent); font-weight:600; }
+    .tf-res { border:1px solid var(--border); border-radius:8px; margin-top:6px; overflow:hidden; max-height:180px; overflow-y:auto; }
+    .tf-res-item { padding:9px 12px; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; }
+    .tf-res-item:last-child { border-bottom:none; }
+    .tf-res-item:hover { background:var(--surface2); }
+    .tf-res-item.on { background:var(--accent-pale); color:var(--accent); }
+    .tf-res-item .t { color:var(--muted); font-size:11px; }
+    .tf-sel { font-size:12px; color:var(--accent); margin-top:6px; display:none; }
+  </style>
+</head>
+<body>
+
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260725a"></script>
+
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Tarefas</span>
+    <div class="sb-topbar-right">
+      <button class="btn btn-primary btn-sm" onclick="abrirTarefa()">+ Nova tarefa</button>
+      <!-- Clock and theme toggle moved to js/sidebar.js -->
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="tf-toolbar">
+      <div class="tf-filters" id="tfFilters"></div>
+      <span style="flex:1"></span>
+      <input type="text" class="tf-search" id="tfSearch" placeholder="Buscar tarefa..." oninput="renderTarefas()">
+    </div>
+    <div id="tfLista"><div class="loading"><div class="spinner"></div> Carregando...</div></div>
+  </div>
+</div>
+
+<!-- ── Modal Nova/Editar tarefa ── -->
+<div class="modal-overlay" id="tfOverlay" onclick="fecharTarefa()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+    <div class="modal-hdr" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div class="modal-title" id="tfModalTit">Nova tarefa</div>
+      <button class="modal-close" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer" onclick="fecharTarefa()">×</button>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">O que fazer *</label>
+      <input type="text" id="tfTexto" placeholder="Ex.: Agendar fotos do Cubatão com o Charles">
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group" style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Data</label>
+        <input type="date" id="tfData">
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Hora (opcional)</label>
+        <input type="time" id="tfHora">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Vincular a (opcional)</label>
+      <div class="tf-pick" id="tfPick"></div>
+    </div>
+
+    <div class="form-group" id="tfBuscaWrap" style="margin-bottom:12px;display:none">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px" id="tfBuscaLbl">Quem / qual</label>
+      <input type="text" id="tfBusca" placeholder="Buscar..." oninput="tfBuscarVinc()">
+      <div class="tf-res" id="tfRes" style="display:none"></div>
+      <div class="tf-sel" id="tfSelInfo"></div>
+    </div>
+
+    <div class="modal-actions" style="display:flex;align-items:center;gap:8px;margin-top:18px">
+      <div style="flex:1">
+        <button class="btn btn-danger btn-sm" id="tfBtnDel" onclick="excluirTarefa()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="fecharTarefa()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarTarefa()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar tarefa</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script>
+// ── Estado ──────────────────────────────────────────────────────────────────
+let _tarefas = [], _pessoas = [], _carteira = [], _leads = [], _rotulos = [];
+let editId = null;
+let filtro = localStorage.getItem('tarefas_filtro') || 'todas';   // 'todas' | 'soltas' | <rotulo>
+let doneOpen = false;
+
+// rótulo → cor (tags); fallback muted
+const ROT_COR = {
+  'Proprietário': 'var(--accent)',
+  'Comprador':    'var(--info)',
+  'Corretor':     '#a78bfa',
+  'Captação':     '#2dd4bf',
+  'Imóvel':       'var(--success)',
+  'Pagamento':    'var(--warn)',
+};
+// rótulo → onde buscar o vínculo. null = sem busca (tarefa só com etiqueta)
+const ROT_ENT = {
+  'Proprietário': 'pessoa', 'Comprador': 'pessoa', 'Corretor': 'pessoa',
+  'Captação': 'carteira', 'Imóvel': 'carteira', 'Pagamento': null,
+};
+
+// criação: rótulo + vínculo escolhidos
+let novoRotulo = null, novoEntTipo = null, novoEntId = null, novoEntNome = '';
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// Ícone SVG por prefixo (substitui emoji nos toasts) — sem emoji na UI
+const TOAST_ICO = {
+  '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+  '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+};
+TOAST_ICO['⚠'] = TOAST_ICO['⚠️'];
+function toast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  let icon = '', text = String(msg == null ? '' : msg);
+  for (const k in TOAST_ICO) { if (text.indexOf(k) === 0) { icon = TOAST_ICO[k]; text = text.slice(k.length).trim(); break; } }
+  t.innerHTML = icon + '<span style="vertical-align:middle">' + esc(text) + '</span>';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  await initSupabase();
+  await carregarTudo();
+  renderFiltros();
+  renderTarefas();
+  // Deep-link: abrir direto a janela de nova tarefa (?novo=1) — usado pelo Dash/Dia
+  if (new URLSearchParams(location.search).get('novo')) abrirTarefa();
+}
+
+async function carregarTudo() {
+  const [t, p, c, l, r] = await Promise.all([
+    db().from('tarefas').select('*').then(r => r.data||[]),
+    db().from('pessoas').select('id,nome,empresa').order('nome').then(r => r.data||[]),
+    db().from('imoveis_carteira').select('id,codigo,rua,numero,complemento').then(r => r.data||[]),
+    db().from('leads').select('id,nome,carteira_id').then(r => r.data||[]),
+    db().from('listas_opcoes').select('valor,ordem').eq('categoria','rotulo_tarefa').eq('ativo',true).order('ordem').then(r => r.data||[]),
+  ]);
+  _tarefas = t; _pessoas = p; _carteira = c; _leads = l; _rotulos = (r||[]).map(x => x.valor);
+}
+
+// ── Resolução de vínculo (nome + link para a tela exata) ───────────────────────
+function carteiraLabel(c) {
+  if (!c) return 'Imóvel';
+  const end = [c.rua, c.numero].filter(Boolean).join(', ');
+  return c.codigo ? (c.codigo + (end ? ' · ' + end : '')) : (end || 'Imóvel');
+}
+function vincDaTarefa(t) {
+  // prioridade: lead → imóvel → pessoa
+  if (t.lead_id) {
+    const ld = _leads.find(x => x.id === t.lead_id);
+    return { nome: ld ? ld.nome : 'Lead', link: 'imoveis.html?tab=visitas&lead=' + t.lead_id };
+  }
+  if (t.carteira_id) {
+    const c = _carteira.find(x => x.id === t.carteira_id);
+    return { nome: carteiraLabel(c), link: 'imoveis.html?tab=carteira&abrir=' + t.carteira_id };
+  }
+  if (t.pessoa_id) {
+    const p = _pessoas.find(x => x.id === t.pessoa_id);
+    return { nome: p ? p.nome : 'Pessoa', link: 'contatos.html?abrir=' + t.pessoa_id };
+  }
+  return null;
+}
+
+// ── Datas ──────────────────────────────────────────────────────────────────────
+function hojeStr(){ return new Date().toISOString().slice(0,10); }
+function horaDe(q){ const d = new Date(q); const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0'); return (d.getHours()||d.getMinutes()) ? hh+':'+mm : ''; }
+function dataBR(q){ const d = new Date(q); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+
+function grupoDe(t) {
+  if (t.feito) return 'done';
+  if (!t.quando) return 'sem';
+  const qd = t.quando.slice(0,10), h = hojeStr();
+  if (qd < h) return 'venc';
+  if (qd === h) return 'hoje';
+  return 'prox';
+}
+function whenLabel(t, grupo) {
+  if (grupo === 'sem') return 'sem data';
+  const hora = horaDe(t.quando);
+  if (grupo === 'venc') {
+    const dias = Math.round((new Date(hojeStr()) - new Date(t.quando.slice(0,10))) / 86400000);
+    return dias === 1 ? 'venceu ontem' : 'venceu há ' + dias + 'd';
+  }
+  if (grupo === 'hoje') return 'hoje' + (hora ? ' ' + hora : '');
+  return dataBR(t.quando) + (hora ? ' ' + hora : '');
+}
+
+// ── Filtros ─────────────────────────────────────────────────────────────────────
+function renderFiltros() {
+  const chips = [['todas','Todas']].concat(_rotulos.map(r => [r, r])).concat([['soltas','Soltas']]);
+  document.getElementById('tfFilters').innerHTML = chips.map(([k,lbl]) =>
+    `<span class="tf-chip${filtro===k?' on':''}" onclick="setFiltro('${esc(k)}')">${esc(lbl)}</span>`
+  ).join('');
+}
+function setFiltro(k) {
+  filtro = k; localStorage.setItem('tarefas_filtro', k);
+  renderFiltros(); renderTarefas();
+}
+function passaFiltro(t) {
+  if (filtro === 'todas') return true;
+  if (filtro === 'soltas') return !t.lead_id && !t.pessoa_id && !t.carteira_id && !t.rotulo;
+  return t.rotulo === filtro;
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────────
+function renderTarefas() {
+  const q = (document.getElementById('tfSearch')?.value || '').toLowerCase().trim();
+  let lista = _tarefas.filter(passaFiltro);
+  if (q) lista = lista.filter(t => (t.texto||'').toLowerCase().includes(q));
+
+  const G = { venc:[], hoje:[], prox:[], sem:[], done:[] };
+  lista.forEach(t => G[grupoDe(t)].push(t));
+
+  const ordVenc = (a,b) => (b.quando||'').localeCompare(a.quando||'');  // mais recente em cima
+  const ordProx = (a,b) => (a.quando||'').localeCompare(b.quando||'');  // mais próxima em cima
+  G.venc.sort(ordVenc); G.hoje.sort(ordProx); G.prox.sort(ordProx);
+  G.done.sort((a,b) => (b.updated_at||'').localeCompare(a.updated_at||''));
+
+  const SEC = [
+    { k:'venc', cls:'g-venc', ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', lbl:'Vencidas' },
+    { k:'hoje', cls:'g-hoje', ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', lbl:'Hoje' },
+    { k:'prox', cls:'g-prox', ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>', lbl:'Próximas' },
+    { k:'sem',  cls:'g-sem',  ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></svg>', lbl:'Sem data' },
+  ];
+
+  let html = '';
+  SEC.forEach(s => {
+    if (!G[s.k].length) return;
+    html += `<div class="tf-group-h ${s.cls}">${s.ic} ${s.lbl} <span class="count">${G[s.k].length}</span></div>`;
+    html += G[s.k].map(t => taskHTML(t, s.k)).join('');
+  });
+
+  if (G.done.length) {
+    html += `<div class="tf-group-h g-done clk" onclick="toggleDone()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Concluídas <span class="count">${G.done.length}${doneOpen?'':' · ocultas'}</span></div>`;
+    if (doneOpen) html += G.done.map(t => taskHTML(t, 'done')).join('');
+  }
+
+  if (!html) {
+    html = `<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <p class="empty-state-title">${q || filtro!=='todas' ? 'Nenhuma tarefa aqui.' : 'Nenhuma tarefa ainda.'}</p>
+      ${(!q && filtro==='todas') ? '<p>Clique em "+ Nova tarefa" para começar.</p>' : ''}</div>`;
+  }
+  document.getElementById('tfLista').innerHTML = html;
+}
+
+function taskHTML(t, grupo) {
+  const cls = grupo === 'venc' ? ' venc' : (grupo === 'hoje' ? ' hoje' : (grupo === 'done' ? ' done' : ''));
+  const whenCls = grupo === 'venc' ? ' late' : (grupo === 'hoje' ? ' today' : '');
+  const v = vincDaTarefa(t);
+  const cor = ROT_COR[t.rotulo] || 'var(--muted)';
+  let tag = '';
+  if (t.rotulo || v) {
+    const parte = [t.rotulo, v ? v.nome : null].filter(Boolean).join(' · ');
+    const onclick = v ? ` onclick="location.href='${v.link}'"` : '';
+    tag = `<span class="tf-tag"${onclick} style="background:${cor}1f;color:${cor}">${esc(parte)}${v ? ' <span class="arr">↗</span>' : ''}</span>`;
+  }
+  return `<div class="tf-task${cls}">
+    <div class="tf-chk${t.feito?' on':''}" onclick="toggleFeito('${t.id}')"></div>
+    <div class="tf-body" onclick="abrirTarefa('${t.id}')" style="cursor:pointer">
+      <div class="tf-txt">${esc(t.texto)}</div>
+      <div class="tf-meta">
+        <span class="tf-when${whenCls}">${whenLabel(t, grupo)}</span>
+        ${tag}
+      </div>
+    </div>
+    <button class="tf-del" title="Excluir" onclick="excluirTarefaId('${t.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+  </div>`;
+}
+
+function toggleDone(){ doneOpen = !doneOpen; renderTarefas(); }
+
+// ── Ações ────────────────────────────────────────────────────────────────────────
+async function toggleFeito(id) {
+  const t = _tarefas.find(x => x.id === id); if (!t) return;
+  const novo = !t.feito;
+  const { error } = await db().from('tarefas').update({ feito: novo, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) { toast('❌ ' + error.message); return; }
+  t.feito = novo; t.updated_at = new Date().toISOString();
+  renderTarefas();
+}
+
+async function excluirTarefaId(id) {
+  if (!confirm('Excluir esta tarefa?')) return;
+  const { error } = await db().from('tarefas').delete().eq('id', id);
+  if (error) { toast('❌ ' + error.message); return; }
+  _tarefas = _tarefas.filter(x => x.id !== id);
+  renderTarefas();
+}
+function excluirTarefa() { if (editId) { const id = editId; fecharTarefa(); excluirTarefaId(id); } }
+
+// ── Modal criar/editar ────────────────────────────────────────────────────────────
+function abrirTarefa(id) {
+  editId = id || null;
+  const t = id ? _tarefas.find(x => x.id === id) : null;
+  document.getElementById('tfModalTit').textContent = t ? 'Editar tarefa' : 'Nova tarefa';
+  document.getElementById('tfTexto').value = t?.texto || '';
+
+  // data/hora
+  let d = '', h = '';
+  if (t?.quando) { const dt = new Date(t.quando); d = dt.toISOString().slice(0,10); h = horaDe(t.quando); }
+  document.getElementById('tfData').value = d;
+  document.getElementById('tfHora').value = h;
+
+  // vínculo atual
+  novoRotulo = t?.rotulo || null;
+  novoEntTipo = null; novoEntId = null; novoEntNome = '';
+  if (t?.lead_id)         { novoEntTipo = 'lead';     novoEntId = t.lead_id;     const x=_leads.find(z=>z.id===t.lead_id);     novoEntNome = x?x.nome:'Lead'; }
+  else if (t?.carteira_id){ novoEntTipo = 'carteira'; novoEntId = t.carteira_id; const x=_carteira.find(z=>z.id===t.carteira_id); novoEntNome = carteiraLabel(x); }
+  else if (t?.pessoa_id)  { novoEntTipo = 'pessoa';   novoEntId = t.pessoa_id;   const x=_pessoas.find(z=>z.id===t.pessoa_id);  novoEntNome = x?x.nome:'Pessoa'; }
+
+  renderPick();
+  document.getElementById('tfBtnDel').style.display = t ? '' : 'none';
+  document.getElementById('tfOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('tfTexto').focus(), 50);
+}
+
+function fecharTarefa() {
+  document.getElementById('tfOverlay').classList.remove('open');
+  editId = null; novoRotulo = null; novoEntTipo = null; novoEntId = null; novoEntNome = '';
+}
+
+function renderPick() {
+  const opts = [['','Nada (solta)']].concat(_rotulos.map(r => [r, r]));
+  document.getElementById('tfPick').innerHTML = opts.map(([k,lbl]) =>
+    `<span class="tf-pt${(novoRotulo||'')===k?' on':''}" onclick="escolherRotulo('${esc(k)}')">${esc(lbl)}</span>`
+  ).join('');
+  renderBusca();
+}
+
+function escolherRotulo(r) {
+  novoRotulo = r || null;
+  // ao trocar de rótulo, zera o vínculo se o tipo de entidade mudou
+  const ent = novoRotulo ? (ROT_ENT[novoRotulo] || null) : null;
+  if (ent !== novoEntTipo) { novoEntTipo = ent; novoEntId = null; novoEntNome = ''; }
+  else if (!ent) { novoEntTipo = null; novoEntId = null; novoEntNome = ''; }
+  renderPick();
+}
+
+function renderBusca() {
+  const ent = novoRotulo ? (ROT_ENT[novoRotulo] || null) : null;
+  const wrap = document.getElementById('tfBuscaWrap');
+  if (!ent) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  document.getElementById('tfBuscaLbl').textContent = ent === 'pessoa' ? 'Qual pessoa' : 'Qual imóvel';
+  document.getElementById('tfBusca').placeholder = ent === 'pessoa' ? 'Buscar pessoa por nome...' : 'Buscar por código ou rua...';
+  document.getElementById('tfBusca').value = '';
+  document.getElementById('tfRes').style.display = 'none';
+  const sel = document.getElementById('tfSelInfo');
+  if (novoEntId && novoEntNome) { sel.style.display = ''; sel.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>vinculado a <b>' + esc(novoEntNome) + '</b>'; }
+  else sel.style.display = 'none';
+}
+
+function tfBuscarVinc() {
+  const ent = novoRotulo ? (ROT_ENT[novoRotulo] || null) : null;
+  if (!ent) return;
+  const q = (document.getElementById('tfBusca').value || '').toLowerCase().trim();
+  const box = document.getElementById('tfRes');
+  if (!q) { box.style.display = 'none'; return; }
+  let res = [];
+  if (ent === 'pessoa') {
+    res = _pessoas.filter(p => (p.nome||'').toLowerCase().includes(q)).slice(0, 8)
+      .map(p => ({ id: p.id, nome: p.nome, tag: p.empresa || 'pessoa' }));
+  } else {
+    res = _carteira.filter(c => carteiraLabel(c).toLowerCase().includes(q)).slice(0, 8)
+      .map(c => ({ id: c.id, nome: carteiraLabel(c), tag: c.complemento || 'imóvel' }));
+  }
+  if (!res.length) { box.style.display = ''; box.innerHTML = '<div class="tf-res-item" style="cursor:default"><span class="t">Nada encontrado</span></div>'; return; }
+  box.style.display = '';
+  box.innerHTML = res.map(r =>
+    `<div class="tf-res-item${novoEntId===r.id?' on':''}" onclick="selecionarVinc('${r.id}','${esc(r.nome).replace(/'/g,"\\'")}')">
+      <span>${esc(r.nome)}</span><span class="t">${esc(r.tag)}</span></div>`
+  ).join('');
+}
+
+function selecionarVinc(id, nome) {
+  novoEntId = id; novoEntNome = nome;
+  document.getElementById('tfRes').style.display = 'none';
+  document.getElementById('tfBusca').value = '';
+  const sel = document.getElementById('tfSelInfo');
+  sel.style.display = ''; sel.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>vinculado a <b>' + esc(nome) + '</b>';
+}
+
+async function salvarTarefa() {
+  const texto = (document.getElementById('tfTexto').value || '').trim();
+  if (!texto) { toast('⚠️ Escreva o que fazer'); document.getElementById('tfTexto').focus(); return; }
+  const data = document.getElementById('tfData').value;
+  const hora = document.getElementById('tfHora').value;
+  const quando = data ? new Date(data + 'T' + (hora || '09:00')).toISOString() : null;
+
+  const payload = {
+    texto, quando,
+    rotulo: novoRotulo || null,
+    pessoa_id:   novoEntTipo === 'pessoa'   ? novoEntId : null,
+    carteira_id: novoEntTipo === 'carteira' ? novoEntId : null,
+    updated_at: new Date().toISOString(),
+  };
+  // lead_id: preserva o que já existia (tarefas vindas da ficha do lead); não editável aqui
+  if (editId) {
+    const cur = _tarefas.find(x => x.id === editId);
+    payload.lead_id = (novoEntTipo === 'lead') ? novoEntId : (cur?.lead_id || null);
+    if (payload.lead_id) { payload.pessoa_id = null; payload.carteira_id = null; }
+  }
+
+  let error;
+  if (editId) ({ error } = await db().from('tarefas').update(payload).eq('id', editId));
+  else        ({ error } = await db().from('tarefas').insert({ ...payload, feito: false }));
+  if (error) { toast('❌ ' + error.message); return; }
+
+  toast(editId ? '✅ Tarefa atualizada' : '✅ Tarefa criada');
+  fecharTarefa();
+  await carregarTudo();
+  renderTarefas();
+}
+
+// ── Start ────────────────────────────────────────────────────────────────────────
+init().catch(e => {
+  document.getElementById('tfLista').innerHTML =
+    `<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><p>Falha ao conectar: ${e.message}</p></div>`;
+});
+
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+  // clock and theme handlers moved to js/sidebar.js
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listas do sistema — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260728a">
+  <style>
+    /* ── Listas do sistema (Etapa 0 da reforma, mockup-listas-sistema.html) ── */
+    /* [Rev 6.1] REGRA DE LAYOUT: o conteúdo preenche a largura toda — o índice
+       era coluna única de 640px encostada à esquerda; virou grade de 2 colunas.
+       Única exceção: texto corrido, que mantém medida de leitura (~78ch). */
+    .page-intro{font-size:13px;color:var(--muted);margin-bottom:18px;max-width:78ch}
+    .cat-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    @media(max-width:900px){.cat-list{grid-template-columns:1fr}}
+    .cat-row{display:flex;align-items:center;gap:14px;padding:15px 16px;border:1px solid transparent;border-radius:10px;cursor:pointer;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--edge) border-box;box-shadow:var(--shadow-card);transition:border-color .15s,transform .1s}
+    .cat-row:hover{border-color:var(--accent);transform:translateX(2px)}
+    .cat-ic{width:40px;height:40px;border-radius:10px;background:var(--accent-pale);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .cat-ic svg{width:20px;height:20px}
+    .cat-txt{flex:1;min-width:0}
+    .cat-nome{font-weight:600;font-size:14px}
+    .cat-sub{font-size:12px;color:var(--muted);margin-top:1px}
+    .cat-chev{color:var(--muted);flex-shrink:0}
+    .cat-chev svg{width:18px;height:18px;stroke:currentColor}
+    .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px}
+    .modal-close:hover{color:var(--text)}
+    .opc-row{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;margin-bottom:5px}
+    .opc-val{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .opc-ic{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;width:28px;height:28px;font-size:13px;line-height:1;padding:0}
+    .opc-ic:disabled{opacity:.3;cursor:default}
+    .opc-del{color:var(--danger);border-color:rgba(239,68,68,.4)}
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260728a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Configurações</span>
+    <div class="sb-topbar-right"></div>
+  </div>
+
+  <div class="page">
+    <div class="page-intro">As listas editáveis do sistema. Clique numa categoria para adicionar, renomear, reordenar (arrastando) ou remover opções. Ao remover, quem já usa o valor continua com ele.</div>
+    <div class="cat-list" id="catList"><div class="loading"><div class="spinner"></div> Carregando...</div></div>
+  </div>
+</div>
+
+<!-- Gerenciador de listas editáveis (compartilhado — js/listas.js) -->
+<div class="modal-overlay" id="opcOverlay" onclick="fecharGerenciadorOpcoes()" style="z-index:2000">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="opcTitulo">Lista</div>
+      <button class="modal-close" onclick="fecharGerenciadorOpcoes()">×</button>
+    </div>
+    <div id="opcHint" style="font-size:11.5px;color:var(--muted);font-style:italic;margin-bottom:12px"></div>
+    <div id="opcLista"></div>
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <input id="opcNovo" placeholder="Adicionar item…" style="flex:1" oninput="opcErrLimpar()" onkeydown="if(event.key==='Enter'){opcAdd();return false;}">
+      <button class="btn btn-primary btn-sm" onclick="opcAdd()" style="white-space:nowrap">+ Adicionar</button>
+    </div>
+    <!-- Aviso de validação junto do campo (padrão do sistema) -->
+    <div class="field-error" id="opcErrAdd" role="alert"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="fecharGerenciadorOpcoes()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.3/Sortable.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script src="js/listas.js?v=20260728a"></script>
+<script>
+// ── Toast (padrão do sistema) ────────────────────────────────────────────────
+const TOAST_ICO = {
+  '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+  '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  '🗑️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7a7d82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>'
+};
+TOAST_ICO['⚠'] = TOAST_ICO['⚠️']; TOAST_ICO['🗑'] = TOAST_ICO['🗑️'];
+function toast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  let icon = '', text = String(msg == null ? '' : msg);
+  for (const k in TOAST_ICO) { if (text.indexOf(k) === 0) { icon = TOAST_ICO[k]; text = text.slice(k.length).trim(); break; } }
+  t.innerHTML = icon + '<span style="vertical-align:middle">' + text.replace(/</g,'&lt;') + '</span>';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── Índice das categorias ────────────────────────────────────────────────────
+const ICO_NET  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V11l5-3v13M14 21V6l5 3v12M9 9v.01M9 13v.01M9 17v.01"/></svg>';
+const ICO_ROLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>';
+const ICO_STAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const ICO_HOME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+const ICO_TAG  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
+const ICO_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+
+const CATS = [
+  { cat:'rede_imobiliaria',  nome:'Redes de imobiliária',  ico:ICO_NET,  desc:'Ex.: Pilar, RE/MAX — usadas no cadastro de imobiliárias.' },
+  { cat:'papel_imobiliaria', nome:'Papéis na imobiliária', ico:ICO_ROLE, desc:'Ex.: Corretor, Advogado, Recepção — na equipe da imobiliária.' },
+  { cat:'conservacao',       nome:'Conservação',           ico:ICO_STAR, desc:'Estado de conservação usado nos imóveis.' },
+  { cat:'tipologia',         nome:'Tipologia',             ico:ICO_HOME, desc:'Tipo de imóvel (apartamento, casa, cobertura…).' },
+  { cat:'rotulo_tarefa',     nome:'Rótulos de tarefa',     ico:ICO_TAG,  desc:'Etiquetas para organizar as tarefas.' },
+];
+
+function renderListasIndex() {
+  document.getElementById('catList').innerHTML = CATS.map(c => {
+    const n = (opcoesImovel[c.cat] || []).length;
+    return `<div class="cat-row" onclick="abrirGerenciadorOpcoes('${c.cat}')">
+      <div class="cat-ic">${c.ico}</div>
+      <div class="cat-txt"><div class="cat-nome">${c.nome}</div><div class="cat-sub">${n} ${n === 1 ? 'item' : 'itens'} · ${c.desc}</div></div>
+      <div class="cat-chev">${ICO_CHEV}</div>
+    </div>`;
+  }).join('');
+}
+
+async function init() {
+  await initSupabase();
+  await carregarOpcoes();
+  renderListasIndex();
+}
+init().catch(e => {
+  document.getElementById('catList').innerHTML =
+    '<div class="empty-state"><p class="empty-state-title">Não foi possível carregar</p><p class="empty-state-hint">' + (e.message || e) + '</p></div>';
+});
+
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+})();
+</script>
+</body>
+</html>

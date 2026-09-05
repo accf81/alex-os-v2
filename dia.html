@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dia — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260713h">
+  <style>
+    .dia-config-body { display: none; margin-top: 16px; }
+    .dia-config-body.open { display: block; }
+    .dia-config-blocks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 12px; }
+    @media (max-width: 760px) { .dia-config-blocks { grid-template-columns: 1fr; } }
+    .dia-config-block { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .dia-config-block-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+    .dia-config-task-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .dia-config-task-row:last-of-type { border-bottom: none; }
+    .dia-config-task-label { flex: 1; }
+    .dia-config-add-row { display: flex; gap: 8px; margin-top: 10px; }
+    .dia-config-desc { font-size:12px;color:var(--muted);margin-bottom:16px }
+    .dia-config-btn-sm { font-size:11px;padding:1px 7px }
+    .dia-config-reset  { font-size:11px;margin-top:8px }
+    .dia-config-top { margin-bottom:18px; }
+    .dia-config-top.open { margin-bottom:18px; }
+  </style>
+</head>
+<body>
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260725a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Dia</span>
+    <div class="sb-topbar-right">
+      <button class="btn btn-primary btn-sm" onclick="location.href='tarefas.html?novo=1'">+ Nova tarefa</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleConfig()" title="Configurar rotina">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Configurar
+      </button>
+      <!-- Clock and theme toggle moved to js/sidebar.js -->
+    </div>
+  </div>
+
+  <div class="page">
+    <div id="diaKpis" class="kpis"></div>
+    <div class="dia-config-body dia-config-top" id="diaConfigBody"></div>
+    <div id="diaTarefas"></div>
+    <div id="diaAlerts" class="alerts"></div>
+    <div id="diaJobsHoje"></div>
+    <div id="diaBlocos" class="blocos"></div>
+  </div>
+
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script>
+const TOAST_ICO = {
+  '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+  '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+};
+TOAST_ICO['⚠'] = TOAST_ICO['⚠️'];
+function toast(msg,dur=3000){
+  const t=document.getElementById('toast');
+  let icon='', text=String(msg==null?'':msg);
+  for(const k in TOAST_ICO){ if(text.indexOf(k)===0){ icon=TOAST_ICO[k]; text=text.slice(k.length).trim(); break; } }
+  t.innerHTML = icon + '<span style="vertical-align:middle">' + text.replace(/</g,'&lt;') + '</span>';
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ── Constantes ─────────────────────────────────────────────────────────────────
+const HOJE = new Date().toISOString().slice(0,10);
+
+const BLOCOS_DEFAULT = [
+  { id:'manha',  icon:'🌅', titulo:'Manhã',            tasks:['Verificar emails','CRM / Leads','Agenda do dia','Financeiro (dia anterior)','NonStop — novos imóveis'] },
+  { id:'campo',  icon:'🏃', titulo:'Campo / Trabalho', tasks:['Visitas agendadas','Jobs do dia','Atendimentos'] },
+  { id:'fim',    icon:'🌙', titulo:'Fim do dia',        tasks:['Follow-up leads','Registrar anotações','Atualizar CRM','Registrar lançamentos'] },
+];
+
+// Ícone do bloco: mapeia o emoji salvo na config p/ SVG (sem migrar o dado). Desconhecido → texto cru.
+const BLOCO_ICO = {
+  '🌅':'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/></svg>',
+  '🏃':'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  '🌙':'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+};
+function blocoIco(ic){ return BLOCO_ICO[ic] || (ic || ''); }
+
+// ── Persistência localStorage ─────────────────────────────────────────────────
+function getConfig()     { try { return JSON.parse(localStorage.getItem('dia_config'))    || JSON.parse(JSON.stringify(BLOCOS_DEFAULT)); } catch { return JSON.parse(JSON.stringify(BLOCOS_DEFAULT)); } }
+function saveConfig(c)   { localStorage.setItem('dia_config', JSON.stringify(c)); }
+
+// Rotina do dia (reseta todo dia)
+function getRotina()     { try { return JSON.parse(localStorage.getItem('dia_rotina_'+HOJE))   || {}; } catch { return {}; } }
+function saveRotina(r)   { localStorage.setItem('dia_rotina_'+HOJE, JSON.stringify(r)); }
+
+// Tarefas do dia (persistem até marcar como feitas)
+function getTarefas()    { try { return JSON.parse(localStorage.getItem('dia_tarefas')) || []; } catch { return []; } }
+function saveTarefas(t)  { localStorage.setItem('dia_tarefas', JSON.stringify(t)); }
+
+// ── Dados Supabase ─────────────────────────────────────────────────────────────
+let _jobsHoje = [], _alertJobs = [], _alertLeads = [], _alertGestao = [], _alertVisitas = [];
+let _tarefas = [], _pessoas = [], _carteiraAll = [], _leadsAll = [];
+let _kpiCaptacao = 0, _kpiGestaoAtiva = 0, _kpiGestaoRevisao = 0;
+
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function carregarDados() {
+  try {
+    const [jobs, imoveis, gestao, carteira, visitas, tarefas, leads, pessoas] = await Promise.all([
+      db().from('jobs').select('id,tipo,cliente_nome,corretor,data,horario,servicos,status,rua,num,preco').eq('data', HOJE).then(r => r.data||[]),
+      db().from('imoveis').select('id,owner,imovel,estagio,updated_at').then(r => r.data||[]),
+      db().from('gestao_exclusiva').select('id,dados').then(r => r.data||[]),
+      db().from('imoveis_carteira').select('id,codigo,rua,numero,complemento').then(r => r.data||[]),
+      db().from('visitas').select('id,data,horario,status,carteira_id').then(r => r.data||[]),
+      db().from('tarefas').select('id,lead_id,pessoa_id,carteira_id,rotulo,texto,quando,feito').eq('feito', false).then(r => r.data||[]),
+      db().from('leads').select('id,nome,carteira_id').then(r => r.data||[]),
+      db().from('pessoas').select('id,nome').then(r => r.data||[]),
+    ]);
+    _jobsHoje = jobs;
+    _tarefas = tarefas; _pessoas = pessoas; _carteiraAll = carteira; _leadsAll = leads;
+    _kpiCaptacao = (imoveis||[]).filter(im => im.estagio !== 'assinado' && im.estagio !== 'perdido').length;
+
+    // Lembrete pós-visita: agendadas cuja data+hora já passou
+    const hojeStr = new Date().toISOString().slice(0,10);
+    const nowHH = (() => { const n = new Date(); return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0'); })();
+    _alertVisitas = (visitas||[]).filter(v => (v.status||'agendada') === 'agendada' && v.data && (v.data < hojeStr || (v.data === hojeStr && v.horario && v.horario < nowHH)))
+      .map(v => {
+        const c = (carteira||[]).find(x => x.id === v.carteira_id);
+        const lbl = c ? ([c.rua, c.numero].filter(Boolean).join(', ') + (c.complemento ? ' · ' + c.complemento : '')) : 'Imóvel';
+        return { id: v.id, label: lbl, data: v.data ? v.data.split('-').reverse().join('/') : '', horario: v.horario || '' };
+      });
+
+    // 3.3 Fatia B — as tarefas saíram das faixas; agora no bloco destacado (renderTarefasDia).
+
+    // Alertas: jobs não pagos >14 dias
+    const allJobs = await db().from('jobs').select('id,tipo,cliente_nome,corretor,data,status,preco').neq('status','pago').then(r => r.data||[]);
+    _alertJobs = allJobs.filter(j => {
+      if (!j.data) return false;
+      return Math.floor((new Date() - new Date(j.data)) / 86400000) > 14;
+    });
+
+    // Alertas: leads stale >30 dias
+    _alertLeads = imoveis.filter(im => im.estagio !== 'perdido' && im.updated_at && Math.floor((new Date() - new Date(im.updated_at)) / 86400000) > 30);
+
+    // Alertas: gestão
+    const agora = new Date();
+    _alertGestao = gestao.filter(g => {
+      const d = g.dados||{};
+      const fim = d.fim ? new Date(d.fim) : null;
+      const diasFim = fim ? Math.floor((fim - agora) / 86400000) : null;
+      const diasRev = d.ultima_revisao ? Math.floor((agora - new Date(d.ultima_revisao)) / 86400000) : (d.inicio ? Math.floor((agora - new Date(d.inicio)) / 86400000) : 0);
+      return (diasFim !== null && diasFim <= 15) || diasRev >= (d.revisao_freq||60);
+    }).map(g => {
+      const d = g.dados||{};
+      const fim = d.fim ? new Date(d.fim) : null;
+      const diasFim = fim ? Math.floor((fim - agora) / 86400000) : null;
+      const diasRev = d.ultima_revisao ? Math.floor((agora - new Date(d.ultima_revisao)) / 86400000) : 0;
+      const urgente = (diasFim !== null && diasFim <= 7) || diasRev >= (d.revisao_freq||60);
+      return { nome: d.imovel||'Imóvel', diasFim, diasRev, freq: d.revisao_freq||60, urgente };
+    });
+
+    _kpiGestaoAtiva = 0;
+    _kpiGestaoRevisao = 0;
+    (gestao||[]).forEach(g => {
+      const d = g.dados||{};
+      const status = (d.status || '').toString().toLowerCase();
+      const isAtiva = status === '' || status === 'ativa';
+      if (!isAtiva) return;
+      _kpiGestaoAtiva += 1;
+      const diasRev = d.ultima_revisao ? Math.floor((agora - new Date(d.ultima_revisao)) / 86400000) : (d.inicio ? Math.floor((agora - new Date(d.inicio)) / 86400000) : 0);
+      if (diasRev >= (d.revisao_freq||60)) _kpiGestaoRevisao += 1;
+    });
+  } catch(e) { console.warn('Erro ao carregar dados DIA:', e.message); }
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function calcularTarefasDia() {
+  const hojeStr = new Date().toISOString().slice(0,10);
+  const nowHH = (() => { const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); })();
+  const venc = [], hoje = [];
+  (_tarefas||[]).filter(t => t.quando).sort((a,b)=>(b.quando||'').localeCompare(a.quando||'')).forEach(t => {
+    const q = new Date(t.quando); if (isNaN(q)) return;
+    const qDate = t.quando.slice(0,10);
+    const hh = (q.getHours()||q.getMinutes()) ? String(q.getHours()).padStart(2,'0')+':'+String(q.getMinutes()).padStart(2,'0') : '';
+    if (qDate < hojeStr) { const dias = Math.round((new Date(hojeStr)-new Date(qDate))/86400000); venc.push({ tarefa: t, label: dias===1?'venceu ontem':'venceu há '+dias+'d' }); }
+    else if (qDate === hojeStr) {
+      if (hh && hh < nowHH) venc.push({ tarefa: t, label: 'venceu hoje'+(hh?' '+hh:'') });
+      else hoje.push({ tarefa: t, label: 'hoje'+(hh?' '+hh:'') });
+    }
+  });
+  return { venc, hoje };
+}
+
+function renderAlertas() {
+  const urgente = [], atencao = [], info = [];
+
+  _alertGestao.forEach(g => {
+    const msg = g.nome + (g.diasFim !== null && g.diasFim <= 7 ? ' — contrato vence em ' + g.diasFim + 'd' : g.diasRev >= g.freq ? ' — revisão atrasada (' + g.diasRev + 'd)' : '');
+    if (g.urgente) urgente.push(msg); else atencao.push(msg);
+  });
+  if (_alertJobs.length) atencao.push(_alertJobs.length + ' job' + (_alertJobs.length!==1?'s':'') + ' não pago' + (_alertJobs.length!==1?'s':'') + ' há +14 dias');
+  if (_alertLeads.length) atencao.push(_alertLeads.length + ' lead' + (_alertLeads.length!==1?'s':'') + ' no Pipeline sem atualização há +30 dias');
+  if (_jobsHoje.length) info.push(_jobsHoje.length + ' job' + (_jobsHoje.length!==1?'s':'') + ' agendado' + (_jobsHoje.length!==1?'s':'') + ' para hoje');
+
+  let html = '';
+  const dot = '<svg width="9" height="9" viewBox="0 0 24 24" style="vertical-align:1px;margin-right:6px"><circle cx="12" cy="12" r="10" fill="currentColor"/></svg>';
+  const icoRelogio = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+  if (urgente.length) html += '<div class="alert red"><span class="dot"></span><div><b>Urgente</b><div class="txt">' + urgente.join(' · ') + '</div></div></div>';
+  if (atencao.length) html += '<div class="alert amber"><span class="dot"></span><div><b>Atenção</b><div class="txt">' + atencao.join(' · ') + '</div></div></div>';
+  if (info.length)    html += '<div class="alert blue"><span class="dot"></span><div><b>Hoje</b><div class="txt">' + info.join(' · ') + '</div></div></div>';
+  if (_alertVisitas.length) html += '<div class="alert amber"><span class="dot"></span><div><b>Visitas a atualizar</b><div class="txt">' +
+    _alertVisitas.map(v => '<a href="imoveis.html?tab=visitas&visita=' + v.id + '" style="color:inherit;text-decoration:underline;margin-right:12px">' + v.label + ' (' + v.data + (v.horario ? ' ' + v.horario : '') + ')</a>').join('') + '</div></div></div>';
+  document.getElementById('diaAlerts').innerHTML = html;
+}
+
+// 3.3 Fatia B — bloco destacado de Tarefas & Lembretes (vencidas + hoje)
+const ROT_COR = { 'Proprietário':'accent','Comprador':'info','Corretor':'violet','Captação':'success','Imóvel':'success','Pagamento':'warn' };
+function carteiraLbl(c){ if(!c) return 'Imóvel'; const end=[c.rua,c.numero].filter(Boolean).join(', '); return c.codigo ? (c.codigo+(end?' · '+end:'')) : (end||'Imóvel'); }
+function vincTarefa(t) {
+  if (t.lead_id)     { const ld=(_leadsAll||[]).find(x=>x.id===t.lead_id); return { nome: ld&&ld.nome?ld.nome:'Lead', link:'imoveis.html?tab=visitas&lead='+t.lead_id }; }
+  if (t.carteira_id) { const c=(_carteiraAll||[]).find(x=>x.id===t.carteira_id); return { nome: carteiraLbl(c), link:'imoveis.html?tab=carteira&abrir='+t.carteira_id }; }
+  if (t.pessoa_id)   { const p=(_pessoas||[]).find(x=>x.id===t.pessoa_id); return { nome: p&&p.nome?p.nome:'Pessoa', link:'contatos.html?abrir='+t.pessoa_id }; }
+  return null;
+}
+function tarefaLinha(t, grupo, sufixo) {
+  const v = vincTarefa(t);
+  const tone = ROT_COR[t.rotulo] || 'muted';
+  const tag = (t.rotulo || v) ? '<span class="tag" data-tone="' + tone + '"><i></i>' + escHtml([t.rotulo, v?v.nome:null].filter(Boolean).join(' · ')) + '</span>' : '';
+  const onclick = v ? ' onclick="location.href=\''+v.link+'\'"' : '';
+  return '<div class="t-row"' + onclick + '><span class="check" title="Concluir tarefa" onclick="marcarTarefaDia(\''+t.id+'\',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="t-txt">'+escHtml(t.texto||'Tarefa')+'</span>'+tag+'<span class="t-when'+(grupo==='venc'?' late':'')+'">'+escHtml(sufixo)+'</span></div>';
+}
+async function marcarTarefaDia(id, ev) {
+  if (ev) ev.stopPropagation();
+  try {
+    await db().from('tarefas').update({ feito: true }).eq('id', id);
+    _tarefas = _tarefas.filter(t => t.id !== id);   // a lista mostra só feito=false
+    renderTarefasDia();
+    toast('Tarefa concluída.');
+  } catch (e) { toast('⚠️ Não consegui concluir: ' + e.message); }
+}
+function renderTarefasDia() {
+  const el = document.getElementById('diaTarefas'); if (!el) return;
+  const { venc, hoje } = calcularTarefasDia();
+  const ico = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
+  const sub = (venc.length||hoje.length) ? '<span class="sub">· '+venc.length+' vencida'+(venc.length!==1?'s':'')+' · '+hoje.length+' hoje</span>' : '';
+  const total = venc.length + hoje.length;
+  const pct = total ? Math.round((hoje.length / total) * 100) : 0;
+  let body;
+  if (!venc.length && !hoje.length) body = '<div class="t-row"><span class="t-txt">Nada para hoje. Tudo em dia.</span></div>';
+  else body = (venc.length?'<div class="grp v">Vencidas '+venc.length+'</div>'+venc.map(item => tarefaLinha(item.tarefa,'venc', item.label)).join(''):'') + (hoje.length?'<div class="grp h">Hoje '+hoje.length+'</div>'+hoje.map(item => tarefaLinha(item.tarefa,'hoje', item.label)).join(''):'');
+  el.innerHTML = '<div class="todo"><div class="todo-hd">'+ico+'<h3>Tarefas &amp; Lembretes de hoje '+sub+'</h3><button class="btn btn-primary btn-sm" onclick="location.href=\'tarefas.html?novo=1\'">+ Nova</button></div>'
+    + '<div class="todo-prog"><div class="todo-bar"><i style="width:'+pct+'%"></i></div><span class="todo-pct">'+pct+'%</span></div>'
+    + '<div class="todo-body">'+body+'</div></div>';
+}
+
+function renderKpis() {
+  const el = document.getElementById('diaKpis');
+  if (!el) return;
+  const { venc, hoje } = calcularTarefasDia();
+  const tarefasHoje = venc.length + hoje.length;
+  const tarefaNote = venc.length ? '<div class="kpi-note"><i style="color:var(--danger)"></i>' + venc.length + ' vencid' + (venc.length === 1 ? 'a' : 'as') + '</div>' : '';
+  const gestaoNote = _kpiGestaoRevisao ? '<div class="kpi-note"><i style="color:var(--warn)"></i>' + _kpiGestaoRevisao + ' a revisar</div>' : '';
+  el.innerHTML = [
+    '<div class="kpi glass"><div><div class="kpi-num">' + tarefasHoje + '</div><div class="kpi-lbl">Tarefas hoje</div>' + (tarefaNote || '') + '</div><div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div></div>',
+    '<div class="kpi glass"><div><div class="kpi-num">' + _jobsHoje.length + '</div><div class="kpi-lbl">Jobs</div></div><div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div></div>',
+    '<div class="kpi glass"><div><div class="kpi-num">' + _kpiCaptacao + '</div><div class="kpi-lbl">Em captação</div></div><div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div></div>',
+    '<div class="kpi glass"><div><div class="kpi-num">' + _kpiGestaoAtiva + '</div><div class="kpi-lbl">Gestão exclusiva</div>' + (gestaoNote || '') + '</div><div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-6 0v4"/><rect x="4" y="9" width="16" height="11" rx="2"/></svg></div></div>'
+  ].join('');
+}
+
+function renderJobsHoje() {
+  const el = document.getElementById('diaJobsHoje');
+  if (!_jobsHoje.length) { el.innerHTML = ''; return; }
+  const _svgF = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+  const _svgY = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
+  const _svgR = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>';
+  const SVC = { F:_svgF+'Foto', Y:_svgY+'YouTube', R:_svgR+'Reels' };
+  el.innerHTML = '<div class="sec-lbl">Jobs de hoje</div>' +
+    '<div class="jobs">' +
+    _jobsHoje.map(j => {
+      const nome = j.tipo==='RE/MAX Studio 76' ? (j.corretor||'Studio 76') : (j.cliente_nome||j.tipo||'—');
+      const svcs = (j.servicos||[]).map(s=>SVC[s]||s).join(' · ');
+      const end  = [j.rua, j.num].filter(Boolean).join(', ');
+      return '<div class="job">' +
+        '<div class="job-dot"></div>' +
+        '<div style="flex:1"><div class="job-nome">' + nome + (j.horario?' <span class="job-hora">· ' + j.horario + '</span>':'') + '</div>' +
+        (svcs ? '<div class="job-svc">' + svcs + (end?' · '+end:'') + '</div>' : '') + '</div>' +
+        (j.preco ? '<div class="job-preco">R$ ' + j.preco + '</div>' : '') +
+        '</div>';
+    }).join('') + '</div>';
+}
+
+function renderBlocos() {
+  const config  = getConfig();
+  const rotina  = getRotina();
+  const tarefas = getTarefas();
+  const el = document.getElementById('diaBlocos');
+
+  el.innerHTML = config.map((bloco, bi) => {
+    const rotKeys  = (bloco.tasks||[]).map((_,i) => bloco.id+'_r'+i);
+    const doneCnt  = rotKeys.filter(k => rotina[k]).length;
+    const tDia     = tarefas.filter(t => t.bloco === bloco.id);
+    const doneTDia = tDia.filter(t => t.done).length;
+    const total    = rotKeys.length + tDia.length;
+    const done     = doneCnt + doneTDia;
+    const open     = localStorage.getItem('dia_block_open_'+bloco.id) !== 'false';
+
+    const rotRows = (bloco.tasks||[]).map((task, ti) => {
+      const key   = bloco.id+'_r'+ti;
+      const isDone = !!rotina[key];
+      return `<div class="r-row${isDone?' done':''}">
+        <span class="check sq${isDone?' done':''}" onclick="toggleRotina('${bloco.id}','${key}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <span>${task}</span>
+      </div>`;
+    }).join('');
+
+    const tDiaRows = tDia.map(t =>
+      `<div class="r-row${t.done?' done':''}">
+        <span class="check sq${t.done?' done':''}" onclick="toggleTarefa('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <span class="r-txt">${t.link ? `<a href="${t.link}">${t.texto}</a>` : t.texto}</span>
+        <button class="r-del" title="Excluir" onclick="event.stopPropagation();deletarTarefa('${t.id}')">×</button>
+      </div>`
+    ).join('');
+
+    return `<div class="bloco" data-bloco-id="${bloco.id}">
+      <div class="bloco-hd" onclick="toggleBloco('${bloco.id}')">
+        <span class="ic">${blocoIco(bloco.icon)}</span>
+        <h4>${bloco.titulo}</h4>
+        <span class="bloco-prog">${done}/${total}</span>
+      </div>
+      <div class="bloco-bd ${open?'open':''}">
+        ${rotRows ? '<div class="grp">Rotina</div>' + rotRows : ''}
+        <div class="grp" style="margin-top:${rotRows?'14px':'0'}">Anotações rápidas</div>
+        ${tDiaRows || '<div class="t-row"><span class="t-txt">Nenhuma anotação.</span></div>'}
+        <div class="add-row">
+          <input class="add-in" id="add_${bloco.id}" placeholder="+ adicionar tarefa..." onkeydown="if(event.key==='Enter')adicionarTarefa('${bloco.id}')">
+          <button class="btn btn-ghost btn-sm" onclick="adicionarTarefa('${bloco.id}')">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Interações ─────────────────────────────────────────────────────────────────
+function toggleBloco(id) {
+  const bloco = document.querySelector(`.bloco[data-bloco-id="${id}"]`);
+  const body = bloco?.querySelector('.bloco-bd');
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  localStorage.setItem('dia_block_open_'+id, open);
+}
+
+function toggleRotina(blocoId, key) {
+  const r = getRotina();
+  r[key] = !r[key];
+  saveRotina(r);
+  renderBlocos();
+}
+
+function toggleTarefa(id) {
+  const t = getTarefas();
+  const idx = t.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  t[idx].done = !t[idx].done;
+  saveTarefas(t);
+  renderBlocos();
+}
+
+function adicionarTarefa(blocoId) {
+  const inp = document.getElementById('add_'+blocoId);
+  const texto = (inp?.value||'').trim();
+  if (!texto) return;
+  const t = getTarefas();
+  t.push({ id: Date.now().toString(), bloco: blocoId, texto, done: false });
+  saveTarefas(t);
+  renderBlocos();
+  const newInp = document.getElementById('add_'+blocoId);
+  if (newInp) { newInp.value = ''; newInp.focus(); }
+}
+
+function deletarTarefa(id) {
+  const t = getTarefas().filter(x => x.id !== id);
+  saveTarefas(t);
+  renderBlocos();
+}
+
+// ── Configuração de Rotina ─────────────────────────────────────────────────────
+function toggleConfig() {
+  const body = document.getElementById('diaConfigBody');
+  const open = body.classList.toggle('open');
+  if (open) { renderConfig(); body.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+}
+
+function renderConfig() {
+  const config = getConfig();
+  const el = document.getElementById('diaConfigBody');
+  el.innerHTML = '<p class="dia-config-desc">Gerencie as tarefas fixas de cada bloco. Clique no × para remover. Adicione novas pelo campo abaixo de cada bloco.</p>' +
+    '<div class="dia-config-blocks">' +
+    config.map((bloco, bi) =>
+      `<div class="dia-config-block">
+        <div class="dia-config-block-title">${blocoIco(bloco.icon)} ${bloco.titulo}</div>
+        ${(bloco.tasks||[]).map((t, ti) =>
+          `<div class="dia-config-task-row">
+            <span class="dia-config-task-label">${t}</span>
+            <button class="btn btn-ghost btn-sm dia-config-btn-sm" onclick="removerTaskConfig(${bi},${ti})">×</button>
+          </div>`
+        ).join('')}
+        <div class="dia-config-add-row">
+          <input class="dia-add-input" id="cfg_${bloco.id}" placeholder="Nova tarefa de rotina..." onkeydown="if(event.key==='Enter')adicionarTaskConfig(${bi},'${bloco.id}')">
+          <button class="btn btn-ghost btn-sm" onclick="adicionarTaskConfig(${bi},'${bloco.id}')">+</button>
+        </div>
+      </div>`
+    ).join('') +
+    '</div>' +
+    '<button class="btn btn-danger btn-sm dia-config-reset" onclick="resetarConfigDefault()">↺ Restaurar padrão</button>';
+}
+
+function adicionarTaskConfig(blocoIdx, blocoId) {
+  const inp = document.getElementById('cfg_'+blocoId);
+  const texto = (inp?.value||'').trim();
+  if (!texto) return;
+  const c = getConfig();
+  c[blocoIdx].tasks.push(texto);
+  saveConfig(c);
+  renderConfig();
+  renderBlocos();
+  toast('✅ Tarefa adicionada à rotina');
+}
+
+function removerTaskConfig(blocoIdx, taskIdx) {
+  const c = getConfig();
+  c[blocoIdx].tasks.splice(taskIdx, 1);
+  saveConfig(c);
+  renderConfig();
+  renderBlocos();
+}
+
+function resetarConfigDefault() {
+  if (!confirm('Restaurar a rotina padrão? As customizações serão perdidas.')) return;
+  localStorage.removeItem('dia_config');
+  renderConfig();
+  renderBlocos();
+  toast('✅ Rotina restaurada');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+async function init() {
+  await initSupabase();
+  await carregarDados();
+  renderKpis();
+  renderTarefasDia();
+  renderAlertas();
+  renderJobsHoje();
+  renderBlocos();
+}
+init().catch(e => console.error('DIA init:', e.message));
+
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+  // clock and theme handlers moved to js/sidebar.js
+})();
+</script>
+</div><!-- /sb-main -->
+</body>
+</html>

@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo — Alex OS</title>
+  <!-- v bumpado em 24/08: esta tela passou a usar .field-warn/.modal-error-bar, que entraram
+       no base.css depois da marca antiga (13/07) — sem isso, cache velho mostraria aviso sem caixa. -->
+  <link rel="stylesheet" href="css/base.css?v=20260824a">
+  <style>
+    /* ── Subtabs: usa o padrão central (base.css .subtabs/.subtab, pill) — removido override antigo com linha embaixo ── */
+    .subview { display:none; }
+    .subview.active { display:block; }
+
+    /* ── Pontos Airbnb (indicações) — cada anfitrião = 1 bloco de largura cheia, empilhados ── */
+    .indic-stack { display:flex;flex-direction:column;gap:14px; }
+    .indic-card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;display:grid;grid-template-columns:280px 1fr;gap:24px; }
+    @media (max-width:760px) { .indic-card { grid-template-columns:1fr; } }
+    .indic-name { font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px; }
+    .indic-name svg { width:15px;height:15px;stroke:var(--accent); }
+    .indic-pts-row { display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:14px; }
+    .indic-pt { text-align:center;padding:0 6px; }
+    .indic-pt-val { font-size:22px;font-weight:700; }
+    .indic-pt-val.text-success { color:var(--success); }
+    .indic-pt-val.text-warning { color:var(--accent); }
+    .indic-pt-lbl { font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:3px; }
+    .indic-bar-wrap { height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px; }
+    .indic-bar-fill { height:100%;background:var(--accent);border-radius:3px;transition:width .5s; }
+    .indic-meta { font-size:11px;color:var(--muted); }
+    .prize-available { background:var(--accent-pale);border:1px solid rgba(255,102,0,.35);border-radius:8px;padding:8px 12px;margin-top:12px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--accent); }
+    .prize-used-list { font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7; }
+
+    /* coluna da direita — trabalhos pontuados (lista rolável + expandir) */
+    .indic-jobs { border-left:1px solid var(--border);padding-left:24px;display:flex;flex-direction:column;min-width:0; }
+    .indic-jobs-hdr { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px; }
+    .indic-jobs-title { font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted); }
+    .indic-jobs-count { font-size:11px;color:var(--muted); }
+    .indic-jobs-list { max-height:184px;overflow-y:auto;padding-right:14px; }
+    .indic-jobs-list.expanded { max-height:420px; }
+    .indic-job-row { display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border); }
+    .indic-job-row:last-child { border-bottom:none; }
+    .indic-job-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    .indic-job-info { flex:1;min-width:0; }
+    .indic-job-end { font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .indic-job-meta { font-size:11px;color:var(--muted); }
+    .indic-job-pts { font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap; }
+    .indic-job-pts.success { color:var(--success); }
+    .indic-job-pts.warning { color:var(--accent); }
+    .indic-jobs-toggle { background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:8px 0 0;text-align:left; }
+
+    /* ── KPI strip (5 blocos, valores alinhados) ──
+       Nota: .kpi/.kpi-val/.kpi-label/.kpi-sub são classes globais (base.css) reaproveitadas
+       por outras páginas (Dia usa .kpi como flex-row!). Aqui só ajustamos o CONTAINER
+       (.kpi precisa virar block, senão herda o display:flex do Dia) — a tipografia de
+       .kpi-val/.kpi-label/.kpi-sub é protegida centralmente e não deve ser sobrescrita. */
+    .kpi-row { display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:20px; }
+    .kpi-row .kpi { display:block;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;min-width:0; }
+    .kpi-row .kpi-val { display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;min-width:0; }
+    .kpi-row .kpi-val>span:first-child { white-space:nowrap; }
+    .arrow-up   { color:var(--success);font-size:11px;font-weight:700;white-space:nowrap; }
+    .arrow-down { color:var(--danger);font-size:11px;font-weight:700;white-space:nowrap; }
+
+    /* ── Toolbar (busca + ordenar + contagem) ── */
+    .jobs-toolbar { display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center; }
+    .jobs-search { flex:1;max-width:340px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font-ui);font-size:13px; }
+    .jobs-search::placeholder { color:var(--muted); }
+    .jobs-toolbar-spacer { flex:1; }
+    .jobs-count { font-size:12.5px;color:var(--muted); }
+    .jobs-count b { color:var(--text);font-weight:700; }
+    .jobs-sort { display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted); }
+    .jobs-select { background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--font-ui);font-size:13px; }
+
+    /* ── Filtro Tipo + Status (mesma linha, separador sutil, termina na borda) ── */
+    .status-filter { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:14px; }
+    .filter-grp { display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
+    .filter-grp.grp-status { padding-left:16px;border-left:1px solid var(--border); }
+    .filter-grp-lbl { font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:2px; }
+    .status-filter button { padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12px;cursor:pointer;transition:.15s;font-family:var(--font-ui); }
+    .status-filter button.f-active { border-color:var(--accent);background:var(--accent-pale);color:var(--accent); }
+
+    /* ── Ano nav ── */
+    .jobs-year-nav { display:flex;align-items:center;gap:12px;margin-bottom:16px; }
+    .jobs-year-nav button { background:var(--bg);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer; }
+    .jobs-year-nav button:hover { color:var(--accent);border-color:var(--accent); }
+    .jobs-year-label { font-weight:800;font-size:16px; }
+
+    /* ── Grupo do mês ── */
+    .month-group { border:1px solid var(--border);border-radius:10px;background:var(--surface2);margin-bottom:12px;overflow:hidden; }
+    .month-group-hdr { display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;gap:14px;flex-wrap:wrap; }
+    .month-group-hdr:hover { background:rgba(255,255,255,.03); }
+    .month-group-left { display:flex;align-items:center;gap:10px; }
+    .month-chevron { width:14px;height:14px;stroke:var(--muted);transition:transform .15s;flex-shrink:0; }
+    .month-group.closed .month-chevron { transform:rotate(-90deg); }
+    .month-group-title { font-size:14.5px;font-weight:700; }
+    .month-group-metrics { display:flex;gap:18px;font-size:12px;color:var(--muted); }
+    .month-group-metrics b { color:var(--text);font-weight:700; }
+    .month-group-metrics .success b { color:var(--success); }
+    .month-group-body { padding:0 8px 8px;display:flex;flex-direction:column;gap:6px; }
+    .month-group.closed .month-group-body { display:none; }
+
+    /* ── badge de Tipo no card ── */
+    .tipo-badge { display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);flex-shrink:0;white-space:nowrap; }
+    .tipo-badge svg { width:10px;height:10px;stroke:currentColor;flex-shrink:0; }
+
+    /* ── Envio de material (Enviar Foto/YouTube/Reels) ── */
+    .envio-line { font-size:11.5px;color:var(--muted);margin-top:6px; }
+    .envio-line a { color:var(--accent);text-decoration:none; }
+    .envio-line a:hover { text-decoration:underline; }
+    .envio-line.muted { font-style:italic; }
+    .envio-undo { color:var(--danger);cursor:pointer;margin-left:8px;font-weight:600; }
+    .envio-undo:hover { text-decoration:underline; }
+
+    /* ── Design System E — Photo ── */
+    .year-nav { display:flex;align-items:center;gap:10px;margin-bottom:16px }
+    .resumo-td-val { color:var(--success);font-weight:600 }
+    .resumo-td-ticket { color:var(--muted) }
+    .resumo-tfoot-val { color:var(--success) }
+
+    /* ── Job cards ── */
+    .job-card { background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s,background .15s; }
+    .job-card:hover { border-color:var(--accent);background:var(--surface2); }
+    .job-dot { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+    .job-info { flex:1;min-width:0;display:flex;flex-direction:column;gap:2px; }
+    .job-toprow { display:flex;align-items:center;gap:8px;min-width:0; }
+    .job-cliente { font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .job-end { font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .job-svcs { display:flex;gap:4px;margin-top:1px; }
+    .svc-badge { font-size:11px;padding:1px 7px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--muted); }
+    .job-meta { display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0; }
+    .job-date { font-size:11.5px;color:var(--muted);white-space:nowrap; }
+    .job-valor { font-size:13px;font-weight:700; }
+    .job-status-badge { font-size:11px;padding:2px 8px;border-radius:20px; }
+
+    /* ── Resumo anual ── */
+    .resumo-wrap { overflow-x:auto; }
+    .resumo-table { width:100%;border-collapse:collapse;font-size:13px;min-width:500px; }
+    .resumo-table thead { background:var(--surface2); }
+    .resumo-table th { text-align:left;padding:10px;color:var(--muted);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap; }
+    .resumo-table td { padding:10px;border-bottom:1px solid var(--border);white-space:nowrap; }
+    .resumo-table tbody tr:hover { background:rgba(255,255,255,.02); }
+    .resumo-table tfoot td { font-weight:700;border-top:2px solid var(--border);border-bottom:none;background:var(--surface2); }
+
+    /* ── Modal serviços ── */
+    .svcs-row { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px; }
+    .svc-toggle { padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-size:13px;transition:.15s;user-select:none; }
+    .svc-toggle.on { border-color:var(--accent);background:var(--accent-pale);color:var(--accent); }
+    .price-hint { font-size:11px;color:var(--muted);margin-top:4px; }
+
+    /* ── Relatório Studio 76 ── */
+    .rel-sub { font-size:12.5px;color:var(--muted);margin-bottom:14px; }
+    .rel-textarea { width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:var(--font-ui);font-size:12.5px;line-height:1.7;min-height:220px;white-space:pre-wrap; }
+
+    .modal-hdr { display:flex;align-items:center;justify-content:space-between;margin-bottom:20px; }
+    .modal-close { background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1; }
+    .modal-close:hover { color:var(--text); }
+    .form-group { margin-bottom:12px; }
+    .form-group label { font-size:12px;color:var(--muted);display:block;margin-bottom:4px; }
+
+    /* ── Busca de contato em Contatos (campo Corretor e campo Cliente) ── */
+    .lf-sel { display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px; }
+    .lf-sel span.nm { flex:1;font-size:13px; }
+    .lf-sel svg.lf-ok { width:14px;height:14px;flex-shrink:0;stroke:var(--success); }
+    .lf-sel .ds-meta { flex-shrink:0; }
+    .job-drop { background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:190px;overflow-y:auto;margin-top:2px; }
+    .job-drop-item { padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px; }
+    .job-drop-item:last-child { border-bottom:none; }
+    .job-drop-item:hover { background:var(--surface2); }
+    .job-drop-empty { padding:8px 12px;font-size:12px;color:var(--muted); }
+    .job-drop-item svg, .job-drop-new svg { width:14px;height:14px;flex-shrink:0; }
+    /* A última linha da lista é sempre "cadastrar o que você digitou" — desenho aprovado
+       em Mockups/photo-vinculo-contato-job.html (seção 3) · 03_UXUI.md §6 impacto 1. */
+    .job-drop-new { padding:9px 12px;font-size:13px;cursor:pointer;color:var(--accent);display:flex;align-items:center;gap:8px;font-weight:600;border-top:1px solid var(--border);background:var(--accent-pale); }
+    .job-drop-new:hover { filter:brightness(1.15); }
+
+    /* Avisos que o base.css ainda não tem: cinza (informação) e verde (deu certo).
+       Mesma anatomia do .field-warn/.field-error centrais. */
+    .field-info { display:none;align-items:flex-start;gap:6px;margin-top:6px;font-size:12px;line-height:1.45;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px; }
+    .field-info.show { display:flex; }
+    .field-info svg { width:14px;height:14px;stroke:currentColor;flex-shrink:0;margin-top:1px; }
+    .field-info .fe-link { color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px; }
+    .field-ok { display:none;align-items:flex-start;gap:6px;margin-top:6px;font-size:12px;line-height:1.45;color:var(--success);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.32);border-radius:7px;padding:7px 9px; }
+    .field-ok.show { display:flex; }
+    .field-ok svg { width:14px;height:14px;stroke:currentColor;flex-shrink:0;margin-top:1px; }
+    .field-ok .fe-link { color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px; }
+
+    /* Tira verde do topo da janela "Guardar em Contatos?" — o job já está salvo (R-7). */
+    .saved-strip { display:flex;align-items:center;gap:9px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.32);border-radius:8px;padding:9px 11px;margin-bottom:14px;font-size:12.5px;color:var(--success);font-weight:600; }
+    .saved-strip svg { width:16px;height:16px;stroke:currentColor;flex-shrink:0; }
+    .saved-strip .sub { color:var(--muted);font-weight:400;font-size:12px; }
+    #contatoOverlay .btn svg { width:14px;height:14px;flex-shrink:0; }
+    .of-spin { width:12px;height:12px;border:1.6px solid var(--border);border-top-color:currentColor;border-radius:50%;display:inline-block;animation:ofSp .7s linear infinite;margin-right:6px;vertical-align:-2px; }
+    @keyframes ofSp { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260725a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">P&amp;V</span>
+    <div class="sb-topbar-right">
+      <button class="btn btn-ghost btn-sm" id="btnMigrar" style="display:none" onclick="migrarDados()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Migrar dados do v1</button>
+      <button class="btn btn-ghost btn-sm" onclick="abrirRelatorioStudio76()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Relatório Studio 76</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ Novo job</button>
+      <!-- Clock and theme toggle moved to js/sidebar.js -->
+    </div>
+  </div>
+
+  <div class="subtabs" style="margin:0;padding:0 20px">
+    <div class="subtab" id="stab-jobs"   onclick="showTab('jobs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Jobs</div>
+    <div class="subtab"        id="stab-resumo" onclick="showTab('resumo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Resumo Anual</div>
+    <div class="subtab"        id="stab-airbnb" onclick="showTab('airbnb')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Pontos Airbnb</div>
+  </div>
+
+  <div class="page">
+
+  <div class="subview" id="sv-jobs">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+  <div class="subview" id="sv-resumo"></div>
+  <div class="subview" id="sv-airbnb"></div>
+</div>
+
+<!-- ── Modal Job ── -->
+<div class="modal-overlay" id="jobOverlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:700px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="jobModalTitulo">Novo Job</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+
+    <div class="form-row cols-2">
+      <!-- Corretor e Cliente são o MESMO construto, servido pelas mesmas funções jobContato*
+           (R-5 / CA-11) — Esteira/photo-vinculo-contato-job/02_ARQUITETURA.md, D-1. -->
+      <div class="form-group" id="secCorretor">
+        <label>Corretor / Contato</label>
+        <div id="jobCorretorSel" class="lf-sel" style="display:none"><svg class="lf-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span class="nm" id="jobCorretorSelTxt"></span><span class="ds-meta" id="jobCorretorSelTel"></span><button type="button" class="btn btn-ghost btn-sm" onclick="jobContatoClear('corretor')">trocar</button></div>
+        <input type="text" id="fCorretor" placeholder="Buscar em Contatos ou digitar o nome..." oninput="jobContatoBuscar('corretor')" autocomplete="off">
+        <div id="jobCorretorDrop" class="job-drop" style="display:none"></div>
+        <div id="jobCorretorWarn" class="field-warn"></div>
+        <div id="jobCorretorInfo" class="field-info"></div>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="jobContatoNovoToggle('corretor')">+ novo corretor</button>
+        <div id="jobNovoCorretorBox" style="display:none;margin-top:6px;padding:8px;background:var(--surface2);border-radius:8px">
+          <div class="form-row cols-2">
+            <div class="form-group" style="margin:0"><input type="text" id="fJobNovoCorrNome" placeholder="Nome"></div>
+            <div class="form-group" style="margin:0"><input type="text" id="fJobNovoCorrTel" data-mask="tel" placeholder="Telefone"></div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btnCriarCorretor" style="margin-top:6px" onclick="jobContatoCriar('corretor')">Salvar contato</button>
+        </div>
+      </div>
+      <div class="form-group" id="secCliente" style="display:none">
+        <label>Cliente</label>
+        <div id="jobClienteSel" class="lf-sel" style="display:none"><svg class="lf-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span class="nm" id="jobClienteSelTxt"></span><span class="ds-meta" id="jobClienteSelTel"></span><button type="button" class="btn btn-ghost btn-sm" onclick="jobContatoClear('cliente')">trocar</button></div>
+        <input type="text" id="fClienteNome" placeholder="Buscar em Contatos ou digitar o nome..." oninput="jobContatoBuscar('cliente')" autocomplete="off">
+        <div id="jobClienteDrop" class="job-drop" style="display:none"></div>
+        <div id="jobClienteWarn" class="field-warn"></div>
+        <div id="jobClienteInfo" class="field-info"></div>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="jobContatoNovoToggle('cliente')">+ novo cliente</button>
+        <div id="jobNovoClienteBox" style="display:none;margin-top:6px;padding:8px;background:var(--surface2);border-radius:8px">
+          <div class="form-row cols-2">
+            <div class="form-group" style="margin:0"><input type="text" id="fJobNovoCliNome" placeholder="Nome"></div>
+            <div class="form-group" style="margin:0"><input type="text" id="fJobNovoCliTel" data-mask="tel" placeholder="Telefone"></div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btnCriarCliente" style="margin-top:6px" onclick="jobContatoCriar('cliente')">Salvar contato</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tipo *</label>
+        <select id="fTipo" onchange="onTipoChange()">
+          <option value="RE/MAX Studio 76">RE/MAX Studio 76</option>
+          <option value="Anfitrião (Airbnb)">Anfitrião (Airbnb)</option>
+          <option value="Proprietário">Proprietário</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Data</label><input type="date" id="fData"></div>
+      <div class="form-group"><label>Horário</label><input type="time" id="fHorario"></div>
+    </div>
+
+    <div class="form-row cols-3" style="grid-template-columns:2fr 1fr 1fr">
+      <div class="form-group"><label>Rua</label><input type="text" id="fRua" placeholder="Nome da rua"></div>
+      <div class="form-group"><label>Número</label><input type="text" id="fNum" placeholder="Nº"></div>
+      <div class="form-group"><label>Complemento</label><input type="text" id="fComplemento" placeholder="Bloco, apto..."></div>
+    </div>
+
+    <div class="form-row cols-3" style="grid-template-columns:2fr 1fr 1fr">
+      <div class="form-group"><label>Edifício</label><input type="text" id="fEdificio" placeholder="Nome do edifício"></div>
+      <div class="form-group">
+        <label>Metragem</label>
+        <select id="fMetragem" onchange="precoManual=false;atualizarPrecoSugerido()">
+          <option value="<100">&lt; 100 m²</option>
+          <option value=">100">&gt; 100 m²</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo do imóvel</label>
+        <select id="fTipoImovel">
+          <option value="APTO">Apartamento</option>
+          <option value="CASA">Casa</option>
+          <option value="STUDIO">Studio</option>
+          <option value="CASA COND.">Casa em Cond.</option>
+          <option value="COMERCIAL">Comercial</option>
+          <option value="COBERTURA">Cobertura</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" id="secSvcs">
+      <label>Serviços</label>
+      <div class="svcs-row">
+        <div class="svc-toggle" id="svcF" onclick="toggleSvc('F')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Foto</div>
+        <div class="svc-toggle" id="svcY" onclick="toggleSvc('Y')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>YouTube</div>
+        <div class="svc-toggle" id="svcR" onclick="toggleSvc('R')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Reels</div>
+      </div>
+      <div class="price-hint" id="priceHint">Preço sugerido: —</div>
+    </div>
+
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Preço (R$)</label><input type="text" id="fPreco" placeholder="0,00" oninput="fmtCurInput(this);precoManual=true;document.getElementById('priceHint').textContent='(preço manual)'" inputmode="decimal"></div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="fStatus">
+          <option value="agendado">Agendado</option>
+          <option value="feito">Feito</option>
+          <option value="nao_pago">Não pago</option>
+          <option value="pago">Pago</option>
+        </select>
+      </div>
+      <div class="form-group" id="secCodigo"><label>Código do imóvel</label><input type="text" id="fCodigo" placeholder="601301099-3"></div>
+    </div>
+
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Entrega foto</label><input type="date" id="fEntFoto"></div>
+      <div class="form-group"><label>Entrega YouTube</label><input type="date" id="fEntVideo"></div>
+      <div class="form-group"><label>Entrega Reels</label><input type="date" id="fEntReels"></div>
+    </div>
+
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Crédito para</label><input type="text" id="fCreditoPara" placeholder="Nome do anfitrião"></div>
+      <div class="form-group">
+        <label>Tipo de crédito</label>
+        <select id="fTipoCredito">
+          <option value="">— Nenhum —</option>
+          <option value="Direto">Direto</option>
+          <option value="1º Indicado">1º Indicado</option>
+          <option value="Indicado seguinte">Indicado seguinte</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Link do material</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="fLink" placeholder="Drive, Dropbox..." style="flex:1;min-width:200px">
+        <button type="button" class="btn btn-ghost btn-sm" id="btnEnviarFoto" style="flex-shrink:0;white-space:nowrap" onclick="enviarMaterial('foto')">Enviar Foto</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnEnviarVideo" style="flex-shrink:0;white-space:nowrap" onclick="enviarMaterial('video')">Enviar YouTube</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnEnviarReels" style="flex-shrink:0;white-space:nowrap" onclick="enviarMaterial('reels')">Enviar Reels</button>
+      </div>
+      <div class="field-warn" id="envioAviso"></div>
+      <div class="field-ok" id="envioOk"></div>
+      <div class="envio-line" id="envioFotoLine" style="display:none"></div>
+      <div class="envio-line" id="envioVideoLine" style="display:none"></div>
+      <div class="envio-line" id="envioReelsLine" style="display:none"></div>
+    </div>
+
+    <div class="form-group"><label>Observações</label><textarea id="fObs" rows="2" placeholder="Notas..."></textarea></div>
+
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnDel" onclick="excluirJob()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnSalvarJob" onclick="salvarJob()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ── Janela: Confirmar recebimento ── -->
+<div class="modal-overlay" id="recebOverlay" onclick="pularLancamento()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Confirmar recebimento</div>
+      <button class="modal-close" onclick="pularLancamento()">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Revise os dados antes de registrar no financeiro.</p>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Data do recebimento *</label>
+        <input type="date" id="recebData">
+      </div>
+      <div class="form-group">
+        <label>Valor (R$)</label>
+        <input type="text" id="recebValor" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Categoria</label>
+      <select id="recebCat">
+        <option value="Foto">Foto</option>
+        <option value="YouTube">YouTube</option>
+        <option value="Foto + Reels">Foto + Reels</option>
+        <option value="Pacote completo F+Y+R">Pacote completo F+Y+R</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Cliente / empresa (subcategoria)</label>
+      <input type="text" id="recebSub" placeholder="Ex: Studio 76, Airbnb, proprietário...">
+    </div>
+    <div class="form-group">
+      <label>Conta</label>
+      <select id="recebConta">
+        <option value="Pandora Foto Vídeo">Pandora Foto Vídeo</option>
+        <option value="Pandora Homes">Pandora Homes</option>
+        <option value="Pessoal">Pessoal</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="pularLancamento()">Pular — não registrar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarRecebimento()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Confirmar e registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Janela: Guardar em Contatos? (a oferta depois de salvar) ──
+     Uma janela só para as três entradas (nome digitado, caixinha resgatada, nome corrigido)
+     — Esteira/photo-vinculo-contato-job/02_ARQUITETURA.md, D-4. -->
+<div class="modal-overlay" id="contatoOverlay" onclick="ofertaRecusar()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>Guardar em Contatos?</div>
+      <button class="modal-close" onclick="ofertaRecusar()">×</button>
+    </div>
+    <div class="modal-error-bar" id="ofertaErro"></div>
+    <div class="saved-strip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span>Job salvo. <span class="sub">Nada nesta janela desfaz isso.</span></span></div>
+    <div class="field-info" id="ofertaResgate" style="margin-top:0;margin-bottom:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><div>Peguei o que você tinha digitado na ficha do job — <b>nome e telefone</b>. Falta só confirmar.</div></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px" id="ofertaTexto"></p>
+    <div class="form-row cols-2">
+      <div class="form-group" style="margin:0"><label>Nome</label><input type="text" id="ofertaNome" oninput="ofertaAtualizar()" autocomplete="off"></div>
+      <div class="form-group" style="margin:0"><label>Telefone <span style="color:var(--muted)">(opcional)</span></label><input type="text" id="ofertaTel" data-mask="tel" placeholder="(11) 90000-0000" oninput="ofertaAtualizar()" autocomplete="off"></div>
+    </div>
+    <div class="field-ok" id="ofertaRenome"></div>
+    <div class="field-info" id="ofertaJaExiste"></div>
+    <div class="field-warn" id="ofertaSemTel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>Sem telefone, a pessoa entra na agenda — mas o botão de mandar as fotos por WhatsApp <b>continua apagado</b> neste job.</div></div>
+    <div class="field-info" id="ofertaEtiqueta"></div>
+    <div class="field-warn" id="ofertaRecusaAviso"></div>
+    <div class="modal-actions" id="ofertaAcoes">
+      <button class="btn btn-ghost btn-sm" id="ofertaBtnNao" onclick="ofertaRecusar()">Agora não</button>
+      <button class="btn btn-primary btn-sm" id="ofertaBtnOk" onclick="ofertaConfirmar()"></button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);text-align:right;margin-top:8px">"Agora não" não desfaz o job — ele já está salvo.</div>
+  </div>
+</div>
+
+<!-- ── Janela: Usar prêmio (sessão gratuita) ── -->
+<div class="modal-overlay" id="premioOverlay" onclick="closePremioModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+    <div class="modal-hdr">
+      <div class="modal-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>Registrar uso de prêmio</div>
+      <button class="modal-close" onclick="closePremioModal()">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Escolha o job em aberto que será a sessão gratuita de <b id="premioNomeLabel"></b>. Ele vira <b>R$ 0</b>, sai de "A Receber" e não soma pontos.</p>
+    <div class="form-group">
+      <label>Job (trabalho em aberto) *</label>
+      <select id="fPremioJob" onchange="premioJobChange()"></select>
+    </div>
+    <div class="form-group">
+      <label>Data de uso *</label>
+      <input type="date" id="fPremioData">
+    </div>
+    <div class="form-group">
+      <label>Observação</label>
+      <input type="text" id="fPremioObs" placeholder="Ex: Sessão realizada em Rua X...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closePremioModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="savePremio()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>Confirmar uso</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Janela: Relatório Studio 76 ── -->
+<div class="modal-overlay" id="relStudioOverlay" onclick="fecharRelatorioStudio76()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:640px">
+    <div class="modal-hdr">
+      <div class="modal-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Relatório — RE/MAX Studio 76</div>
+      <button class="modal-close" onclick="fecharRelatorioStudio76()">×</button>
+    </div>
+    <p class="rel-sub" id="relStudioSub"></p>
+    <textarea class="rel-textarea" id="relStudioTexto" readonly></textarea>
+    <div class="modal-actions" id="relStudioActions">
+      <button class="btn btn-ghost btn-sm" onclick="copiarRelatorioStudio76()">Copiar texto</button>
+      <button class="btn btn-primary btn-sm" onclick="enviarRelatorioStudio76()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Abrir WhatsApp do robô</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script src="js/masks.js?v=20260729a"></script>
+<script src="js/airbnb.js?v=20260706c"></script>
+<script>
+// ── Estado ────────────────────────────────────────────────────────────────────
+let jobs = [];
+let premios = [];
+let pessoasAll = [];
+let editId = null;
+let activeSvcs = new Set();
+let precoManual = false;
+let jobContatoNome = { corretor: '', cliente: '' };
+function escHtml(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return String(s == null ? '' : s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+let filtroStatus = 'all';
+let filtroTipo = 'all';
+let jobsSearch = '';
+let jobsSort = 'recente';
+let jobsYear = new Date().getFullYear();
+let openMonths = null; // Set — inicializado no primeiro render com o mês atual aberto
+let currentTab = 'jobs';
+let resumoYear = new Date().getFullYear();
+
+const TIPO_BADGE = {
+  'RE/MAX Studio 76': { label: 'Studio 76', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1m4 0h1m-6 4h1m4 0h1"/></svg>' },
+  'Anfitrião (Airbnb)': { label: 'Airbnb', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' },
+  'Proprietário': { label: 'Proprietário', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' },
+};
+
+const STATUS = {
+  agendado: { label: 'Agendado', color: '#3b82f6' },
+  feito:    { label: 'Feito',    color: '#8b5cf6' },
+  nao_pago: { label: 'Não pago', color: '#ef4444' },
+  pago:     { label: 'Pago',     color: '#22c55e' },
+};
+
+const _svgFoto  = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+const _svgVideo = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
+const _svgReels = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>';
+const SVC_LABELS = { F: _svgFoto+'Foto', Y: _svgVideo+'YouTube', R: _svgReels+'Reels' };
+
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// Ícones do campo de contato e dos avisos (SVG, nunca emoji — regra da casa).
+// O tamanho vai escrito no próprio SVG: dentro de .btn não existe regra de tamanho, e sem
+// isto o ícone da janela nova saía com 47px (medido no Chrome — 05_QA.md, P-5).
+const _ico = (d, w) => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+const _svgUser     = _ico('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>');
+const _svgUserPlus = _ico('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>');
+const _svgAlerta   = _ico('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>');
+const _svgInfo     = _ico('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>');
+const _svgTroca    = _ico('<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>');
+const _svgLapis    = _ico('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>');
+const _svgOk       = _ico('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/>');
+const _svgRefaz    = _ico('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>');
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+
+const TOAST_ICO = {
+  '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+  '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  '🗑️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7a7d82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>'
+};
+TOAST_ICO['⚠'] = TOAST_ICO['⚠️']; TOAST_ICO['🗑'] = TOAST_ICO['🗑️'];
+function toast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  let icon = '', text = String(msg == null ? '' : msg);
+  for (const k in TOAST_ICO) { if (text.indexOf(k) === 0) { icon = TOAST_ICO[k]; text = text.slice(k.length).trim(); break; } }
+  t.innerHTML = icon + '<span style="vertical-align:middle">' + text.replace(/</g,'&lt;') + '</span>';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function fmtMoeda(v) {
+  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtCurInput(el) {
+  let raw = el.value.replace(/[^\d,]/g, '');
+  const parts = raw.split(',');
+  let int = parts[0].replace(/^0+/, '') || '0';
+  int = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  el.value = parts.length > 1 ? int + ',' + parts[1].slice(0, 2) : int;
+}
+function parseCur(val) {
+  if (!val) return null;
+  const num = parseFloat(String(val).replace(/\./g, '').replace(',', '.'));
+  return isNaN(num) ? null : num;
+}
+function setCur(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (val == null || val === '') { el.value = ''; return; }
+  const n = Number(val);
+  el.value = isNaN(n) ? '' : n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtData(s) {
+  if (!s) return '—';
+  const [y, m, d] = s.split('-');
+  return d + '/' + m + '/' + y;
+}
+
+function jobNome(j) {
+  return j.tipo === 'RE/MAX Studio 76' ? (j.corretor || 'RE/MAX Studio 76') : (j.cliente_nome || j.tipo);
+}
+function jobEnd(j) {
+  const parts = [j.rua, j.num].filter(Boolean).join(', ');
+  const compl = [j.edificio, j.complemento].filter(Boolean).join(', ');
+  return parts + (compl ? (parts ? ' — ' : '') + compl : '');
+}
+function jobRef(j) {
+  return j.codigo ? ('código ' + j.codigo) : ([j.rua, j.num].filter(Boolean).join(', ') || j.tipo || 'imóvel');
+}
+function jobStatus(j) {
+  return STATUS[j.status] || STATUS.agendado;
+}
+
+function showTab(tab) {
+  const _st = document.getElementById('stab-' + tab), _sv = document.getElementById('sv-' + tab);
+  if (!_st || !_sv) return;   // aba inexistente: não quebra a tela
+  currentTab = tab;
+  localStorage.setItem('pv_tab', tab);
+  document.querySelectorAll('.subtab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.subview').forEach(el => el.classList.remove('active'));
+  _st.classList.add('active');
+  _sv.classList.add('active');
+  document.querySelectorAll('.sb-sub[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  if (window.alexSetCrumb) window.alexSetCrumb('P&V', { jobs:'Jobs', resumo:'Resumo Anual', airbnb:'Pontos Airbnb' }[tab] || 'Jobs');
+  if (tab === 'jobs')   renderJobs();
+  if (tab === 'resumo') renderResumo();
+  if (tab === 'airbnb') renderPontos();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  await initSupabase();
+  await carregarJobs();
+  await carregarPremios();
+  await carregarPessoas();
+  verificarMigracao();
+  let savedTab = localStorage.getItem('pv_tab') || 'jobs';
+  if (!document.getElementById('stab-' + savedTab)) savedTab = 'jobs';   // ignora aba salva inexistente (ex.: airbnb antigo)
+  showTab(savedTab);
+}
+
+async function carregarJobs() {
+  const { data, error } = await db().from('jobs').select('*').order('data', { ascending: false });
+  if (error) { console.error(error); return; }
+  jobs = data || [];
+}
+
+async function carregarPremios() {
+  const { data, error } = await db().from('premios_airbnb').select('*').order('data_uso', { ascending: false });
+  if (error) { console.error(error); return; }
+  premios = data || [];
+}
+
+async function carregarPessoas() {
+  const { data, error } = await db().from('pessoas').select('id,nome,tel').order('nome');
+  if (error) { console.error(error); return; }
+  pessoasAll = data || [];
+}
+
+// ── Pontos Airbnb (indicações) — usa o módulo compartilhado AlexAirbnb ────────
+const _svgEstrela = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+
+function toggleIndicJobs(idx) {
+  const list = document.getElementById('indicJobs' + idx);
+  const btn  = document.getElementById('indicJobsBtn' + idx);
+  const open = list.classList.toggle('expanded');
+  btn.textContent = open ? 'Ver menos ▴' : 'Ver todos (' + btn.dataset.total + ') ▾';
+}
+
+function renderPontos() {
+  const el = document.getElementById('sv-airbnb');
+  const META = AlexAirbnb.META;
+  const { map, prizeJobIds } = AlexAirbnb.resumo(jobs, premios);
+  const entries = Object.values(map).sort((a, b) => b.confirmed - a.confirmed);
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">' + _svgEstrela + '</div>' +
+      '<div class="empty-state-title">Nenhum anfitrião ainda</div>' +
+      '<div class="empty-state-hint">Adicione jobs de Airbnb com "Crédito para" preenchido.</div></div>';
+    return;
+  }
+  const fmtPts = n => (Number.isInteger(n) ? String(n) : n.toFixed(1)).replace('.', ',');
+  el.innerHTML = '<div class="indic-stack">' + entries.map((a, idx) => {
+    const available   = Math.max(0, a.available);
+    const cyclePoints = a.cyclePoints;
+    const pct         = Math.min(100, Math.round((cyclePoints / META) * 100));
+    const falta       = META - cyclePoints;
+    const usados      = premios.filter(p => (p.anfitriao || '') === a.nome);
+    const prizeHistory = usados.map(p => '• ' + fmtData(p.data_uso) + (p.obs ? ' — ' + escHtml(p.obs) : '')).join('<br>');
+
+    const scoredJobs = jobs.filter(j => (j.credito_para || '').trim() === a.nome && !prizeJobIds.has(j.id))
+      .slice().sort((x, y) => (y.data || '').localeCompare(x.data || ''));
+    const showToggle = scoredJobs.length > 4;
+    const jobsRows = scoredJobs.map(j => {
+      const pago = j.status === 'pago';
+      const pts  = AlexAirbnb.pontosDoJob(j);
+      return '<div class="indic-job-row">' +
+        '<div class="indic-job-dot" style="background:' + (pago ? '#22c55e' : '#f59e0b') + '"></div>' +
+        '<div class="indic-job-info"><div class="indic-job-end">' + escHtml(jobEnd(j) || j.tipo || '—') + '</div>' +
+          '<div class="indic-job-meta">' + fmtData(j.data) + (j.tipo_credito ? ' · ' + escHtml(j.tipo_credito) : '') + (!pago ? ' · aguardando pagamento' : '') + '</div></div>' +
+        '<div class="indic-job-pts ' + (pago ? 'success' : 'warning') + '">+' + fmtPts(pts) + ' pt' + (pts === 1 ? '' : 's') + '</div>' +
+      '</div>';
+    }).join('') || '<div class="indic-meta">Nenhum job pontuado ainda.</div>';
+
+    return '<div class="indic-card">' +
+      '<div>' +
+        '<div class="indic-name">' + _svgEstrela + escHtml(a.nome) + '</div>' +
+        '<div class="indic-pts-row">' +
+          '<div class="indic-pt"><div class="indic-pt-val text-success">' + fmtPts(a.confirmed) + '</div><div class="indic-pt-lbl">Confirmados</div></div>' +
+          '<div class="indic-pt"><div class="indic-pt-val text-warning">' + fmtPts(a.pending) + '</div><div class="indic-pt-lbl">Pendentes</div></div>' +
+          '<div class="indic-pt"><div class="indic-pt-val">' + fmtPts(a.confirmed + a.pending) + '</div><div class="indic-pt-lbl">Total</div></div>' +
+        '</div>' +
+        '<div class="indic-bar-wrap"><div class="indic-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="indic-meta">' + fmtPts(cyclePoints) + '/' + META + ' pts neste ciclo' +
+          (falta > 0 && falta < META ? ' · Faltam ' + fmtPts(falta) + ' para a próxima sessão gratuita' : '') + '</div>' +
+        (available > 0 ? '<div class="prize-available"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>' + available + ' sessão gratuita disponível!' +
+          '<button class="btn btn-primary btn-sm" style="margin-left:auto;flex-shrink:0" onclick="openPremioModal(\'' + escAttr(a.nome) + '\')">Usar prêmio</button></div>' : '') +
+        (prizeHistory ? '<div class="prize-used-list"><b>Prêmios utilizados:</b><br>' + prizeHistory + '</div>' : '') +
+      '</div>' +
+      '<div class="indic-jobs">' +
+        '<div class="indic-jobs-hdr"><div class="indic-jobs-title">Trabalhos pontuados</div><div class="indic-jobs-count">' + scoredJobs.length + ' job' + (scoredJobs.length !== 1 ? 's' : '') + '</div></div>' +
+        '<div class="indic-jobs-list" id="indicJobs' + idx + '">' + jobsRows + '</div>' +
+        (showToggle ? '<button class="indic-jobs-toggle" id="indicJobsBtn' + idx + '" data-total="' + scoredJobs.length + '" onclick="toggleIndicJobs(' + idx + ')">Ver todos (' + scoredJobs.length + ') ▾</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+let editPremioNome = '';
+function openPremioModal(nome) {
+  editPremioNome = nome;
+  document.getElementById('premioNomeLabel').textContent = nome;
+  const sel = document.getElementById('fPremioJob');
+  const abertos = jobs.filter(j => (j.credito_para || '').trim() === nome && j.status !== 'pago');
+  sel.innerHTML = abertos.length
+    ? abertos.map(j => '<option value="' + j.id + '">' +
+        escHtml(fmtData(j.data) + ' · ' + ([j.rua, j.num, j.edificio].filter(Boolean).join(', ') || j.tipo || '—') +
+        (j.preco ? ' · ' + fmtMoeda(j.preco) : '')) + '</option>').join('')
+    : '<option value="">— nenhum job em aberto desta pessoa —</option>';
+  premioJobChange();
+  document.getElementById('fPremioObs').value = '';
+  document.getElementById('premioOverlay').classList.add('open');
+}
+function premioJobChange() {
+  const j = jobs.find(x => x.id === document.getElementById('fPremioJob').value);
+  document.getElementById('fPremioData').value = (j && j.data) ? j.data : new Date().toISOString().slice(0, 10);
+}
+function closePremioModal() {
+  document.getElementById('premioOverlay').classList.remove('open');
+}
+async function savePremio() {
+  const jobId = document.getElementById('fPremioJob').value;
+  const data  = document.getElementById('fPremioData').value;
+  const obs   = document.getElementById('fPremioObs').value.trim();
+  if (!jobId) { toast('⚠️ Selecione o job em aberto que será a sessão grátis'); return; }
+  if (!data)  { toast('⚠️ Informe a data de uso'); return; }
+  const res = await AlexAirbnb.redeem(jobId, editPremioNome, data, obs || null);
+  if (res.error) { toast('❌ Erro: ' + res.error.message); return; }
+  closePremioModal();
+  await carregarJobs();
+  await carregarPremios();
+  renderPontos();
+  toast('✅ Sessão prêmio registrada — job zerado e fora de A Receber');
+}
+
+// ── Render Jobs ───────────────────────────────────────────────────────────────
+function arrow(a, b, invertido) {
+  if (!b || a === b) return '';
+  const up   = a > b;
+  const good = invertido ? !up : up;
+  const pct  = Math.abs(Math.round(((a - b) / b) * 100));
+  return '<span class="' + (good ? 'arrow-up' : 'arrow-down') + '">' + (up ? '▲' : '▼') + ' ' + pct + '%</span>';
+}
+
+function jobsFiltrados() {
+  const jobsAno = jobs.filter(j => (j.data || '').startsWith(String(jobsYear)));
+  let lista = jobsAno;
+  if (filtroTipo !== 'all')   lista = lista.filter(j => j.tipo === filtroTipo);
+  if (filtroStatus !== 'all') lista = lista.filter(j => j.status === filtroStatus);
+  if (jobsSearch.trim()) {
+    const q = jobsSearch.trim().toLowerCase();
+    lista = lista.filter(j => (jobNome(j) + ' ' + jobEnd(j)).toLowerCase().includes(q));
+  }
+  return { jobsAno, lista };
+}
+
+function jobsListHtml() {
+  const { lista } = jobsFiltrados();
+  const byMonth = {};
+  lista.forEach(j => { if (!j.data) return; const ym = j.data.slice(0, 7); (byMonth[ym] = byMonth[ym] || []).push(j); });
+  const meses = Object.keys(byMonth).sort().reverse();
+
+  function sortList(arr) {
+    const a = arr.slice();
+    if (jobsSort === 'antigo')     a.sort((x, y) => (x.data || '').localeCompare(y.data || ''));
+    else if (jobsSort === 'valor') a.sort((x, y) => Number(y.preco || 0) - Number(x.preco || 0));
+    else                           a.sort((x, y) => (y.data || '').localeCompare(x.data || ''));
+    return a;
+  }
+
+  return meses.length === 0
+    ? '<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><p>Nenhum job encontrado.</p></div>'
+    : meses.map(ym => {
+        const list = sortList(byMonth[ym]);
+        const total = list.reduce((a, j) => a + Number(j.preco || 0), 0);
+        const pago  = list.filter(j => j.status === 'pago').reduce((a, j) => a + Number(j.preco || 0), 0);
+        const [y, m] = ym.split('-');
+        const label = MONTHS[parseInt(m) - 1] + ' ' + y;
+        const isOpen = openMonths.has(ym);
+        return '<div class="month-group' + (isOpen ? '' : ' closed') + '">' +
+          '<div class="month-group-hdr" onclick="toggleMonthGroup(\'' + ym + '\')">' +
+            '<div class="month-group-left">' +
+              '<svg class="month-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+              '<div class="month-group-title">' + label + '</div>' +
+            '</div>' +
+            '<div class="month-group-metrics">' +
+              '<span>Total <b>' + fmtMoeda(total) + '</b></span>' +
+              '<span class="success">Recebido <b>' + fmtMoeda(pago) + '</b></span>' +
+              '<span><b>' + list.length + '</b> job' + (list.length !== 1 ? 's' : '') + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="month-group-body">' + list.map(j => jobCardHtml(j)).join('') + '</div>' +
+        '</div>';
+      }).join('');
+}
+
+// Reconstrói só a contagem + a lista agrupada (mantém o campo de busca com o foco/cursor intactos)
+function updateJobsListOnly() {
+  const { lista } = jobsFiltrados();
+  const countEl = document.getElementById('jobsCount');
+  if (countEl) countEl.innerHTML = '<b>' + lista.length + '</b> jobs em ' + jobsYear;
+  const wrapEl = document.getElementById('jobsListWrap');
+  if (wrapEl) wrapEl.innerHTML = jobsListHtml();
+}
+
+function renderJobs() {
+  const el  = document.getElementById('sv-jobs');
+  const now = new Date();
+  const curY = now.getFullYear(), curM = now.getMonth();
+  const curYM  = curY + '-' + String(curM + 1).padStart(2, '0');
+  const prevD  = new Date(curY, curM - 1, 1);
+  const prevYM = prevD.getFullYear() + '-' + String(prevD.getMonth() + 1).padStart(2, '0');
+
+  const doMes      = jobs.filter(j => (j.data || '').startsWith(curYM));
+  const doMesAntes = jobs.filter(j => (j.data || '').startsWith(prevYM));
+  const totalMes   = doMes.reduce((a, j) => a + Number(j.preco || 0), 0);
+  const totalAntes = doMesAntes.reduce((a, j) => a + Number(j.preco || 0), 0);
+  const pagoMes    = doMes.filter(j => j.status === 'pago').reduce((a, j) => a + Number(j.preco || 0), 0);
+  const naoPagos   = jobs.filter(j => j.status !== 'pago');
+  const pendTotal  = naoPagos.reduce((a, j) => a + Number(j.preco || 0), 0);
+  const ticketMes  = doMes.length ? totalMes / doMes.length : 0;
+  const ticketAntes = doMesAntes.length ? totalAntes / doMesAntes.length : 0;
+
+  if (openMonths === null) openMonths = new Set([curYM]);
+
+  const { jobsAno, lista } = jobsFiltrados();
+
+  const statusCounts = {};
+  Object.keys(STATUS).forEach(s => statusCounts[s] = jobsAno.filter(j => j.status === s).length);
+  const tipoCounts = {};
+  Object.keys(TIPO_BADGE).forEach(t => tipoCounts[t] = jobsAno.filter(j => j.tipo === t).length);
+
+  el.innerHTML =
+    '<div class="kpi-row">' +
+      '<div class="kpi"><div class="kpi-label">Total mês</div><div class="kpi-val"><span>' + fmtMoeda(totalMes) + '</span>' + arrow(totalMes, totalAntes, false) + '</div><div class="kpi-sub">' + doMes.length + ' jobs · vs mês anterior</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Recebido</div><div class="kpi-val col-success"><span>' + fmtMoeda(pagoMes) + '</span></div><div class="kpi-sub">' + doMes.filter(j=>j.status==='pago').length + ' pagos</div></div>' +
+      '<div class="kpi"><div class="kpi-label">A receber</div><div class="kpi-val col-warn"><span>' + fmtMoeda(pendTotal) + '</span></div><div class="kpi-sub">' + naoPagos.length + ' pendentes (todos os meses)</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-val"><span>' + fmtMoeda(ticketMes) + '</span>' + arrow(ticketMes, ticketAntes, false) + '</div><div class="kpi-sub">no mês atual · vs mês anterior</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Total jobs</div><div class="kpi-val"><span>' + jobs.length + '</span></div><div class="kpi-sub">todos os tempos</div></div>' +
+    '</div>' +
+
+    '<div class="jobs-toolbar">' +
+      '<input class="jobs-search" placeholder="Buscar por nome, corretor ou endereço..." value="' + escAttr(jobsSearch) + '" oninput="setJobsSearch(this.value)">' +
+      '<div class="jobs-toolbar-spacer"></div>' +
+      '<div class="jobs-count" id="jobsCount"><b>' + lista.length + '</b> jobs em ' + jobsYear + '</div>' +
+      '<div class="jobs-sort">Ordenar' +
+        '<select class="jobs-select" onchange="setJobsSort(this.value)">' +
+          '<option value="recente"' + (jobsSort==='recente'?' selected':'') + '>Mais recente</option>' +
+          '<option value="antigo"'  + (jobsSort==='antigo' ?' selected':'') + '>Mais antigo</option>' +
+          '<option value="valor"'   + (jobsSort==='valor'  ?' selected':'') + '>Maior valor</option>' +
+        '</select>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="status-filter">' +
+      '<div class="filter-grp">' +
+        '<span class="filter-grp-lbl">Tipo</span>' +
+        '<button onclick="setFiltroTipo(\'all\')" class="' + (filtroTipo==='all' ? 'f-active' : '') + '">Todos</button>' +
+        Object.keys(TIPO_BADGE).map(t =>
+          '<button onclick="setFiltroTipo(\'' + escAttr(t) + '\')" class="' + (filtroTipo===t ? 'f-active' : '') + '">' + TIPO_BADGE[t].label + ' (' + (tipoCounts[t]||0) + ')</button>'
+        ).join('') +
+      '</div>' +
+      '<div class="filter-grp grp-status">' +
+        '<span class="filter-grp-lbl">Status</span>' +
+        '<button onclick="setFiltroStatus(\'all\')" class="' + (filtroStatus==='all' ? 'f-active' : '') + '">Todos (' + jobsAno.length + ')</button>' +
+        Object.entries(STATUS).map(([s, st]) =>
+          '<button onclick="setFiltroStatus(\'' + s + '\')" style="' + (filtroStatus===s ? 'border-color:' + st.color + ';background:' + st.color + '22;color:' + st.color : '') + '">' + st.label + ' (' + (statusCounts[s]||0) + ')</button>'
+        ).join('') +
+      '</div>' +
+    '</div>' +
+
+    '<div class="jobs-year-nav">' +
+      '<button onclick="jobsYear--;openMonths=null;renderJobs()">◀</button>' +
+      '<span class="jobs-year-label">' + jobsYear + '</span>' +
+      '<button onclick="jobsYear++;openMonths=null;renderJobs()">▶</button>' +
+    '</div>' +
+
+    '<div id="jobsListWrap">' + jobsListHtml() + '</div>';
+}
+
+function toggleMonthGroup(ym) {
+  if (openMonths.has(ym)) openMonths.delete(ym); else openMonths.add(ym);
+  updateJobsListOnly();
+}
+
+function jobCardHtml(j) {
+  const st   = jobStatus(j);
+  const tb   = TIPO_BADGE[j.tipo];
+  const svcs = (j.servicos || []).map(s => '<span class="svc-badge">' + (SVC_LABELS[s] || s) + '</span>').join('');
+  return '<div class="job-card" onclick="openModal(\'' + j.id + '\')">' +
+    '<div class="job-dot" style="background:' + st.color + '"></div>' +
+    '<div class="job-info">' +
+      '<div class="job-toprow">' +
+        '<span class="job-cliente">' + jobNome(j) + '</span>' +
+        (tb ? '<span class="tipo-badge">' + tb.svg + tb.label + '</span>' : '') +
+      '</div>' +
+      '<div class="job-end">' + (jobEnd(j) || '—') + '</div>' +
+      (svcs ? '<div class="job-svcs">' + svcs + '</div>' : '') +
+    '</div>' +
+    '<div class="job-meta">' +
+      '<div class="job-date">' + fmtData(j.data) + '</div>' +
+      (j.preco ? '<div class="job-valor">' + fmtMoeda(j.preco) + '</div>' : '') +
+      '<span class="job-status-badge" style="background:' + st.color + '22;color:' + st.color + '">' + st.label + '</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function setFiltroStatus(s) { filtroStatus = s; renderJobs(); }
+function setFiltroTipo(t)   { filtroTipo = t; renderJobs(); }
+function setJobsSearch(v)   { jobsSearch = v; updateJobsListOnly(); }
+function setJobsSort(v)     { jobsSort = v; updateJobsListOnly(); }
+
+// ── Render Resumo Anual ───────────────────────────────────────────────────────
+function renderResumo() {
+  const el = document.getElementById('sv-resumo');
+  let totTotal = 0, totQtd = 0, totRemax = 0, totAirbnb = 0;
+  let qRemax = 0, qAirbnb = 0;
+
+  const rows = [];
+  for (let mi = 1; mi <= 12; mi++) {
+    const ym   = resumoYear + '-' + String(mi).padStart(2, '0');
+    const list = jobs.filter(j => (j.data || '').startsWith(ym));
+    if (!list.length) continue;
+
+    const total   = list.reduce((a, j) => a + Number(j.preco || 0), 0);
+    const remax   = list.filter(j => j.tipo === 'RE/MAX Studio 76');
+    const airbnb  = list.filter(j => j.tipo !== 'RE/MAX Studio 76');
+    const vRemax  = remax.reduce((a, j) => a + Number(j.preco || 0), 0);
+    const vAirbnb = airbnb.reduce((a, j) => a + Number(j.preco || 0), 0);
+    const ticket  = list.length ? total / list.length : 0;
+
+    rows.push({ label: MONTHS[mi - 1], total, qtd: list.length, vRemax, qRemax: remax.length, vAirbnb, qAirbnb: airbnb.length, ticket });
+    totTotal += total; totQtd += list.length;
+    totRemax += vRemax; qRemax += remax.length;
+    totAirbnb += vAirbnb; qAirbnb += airbnb.length;
+  }
+
+  const f = v => v ? fmtMoeda(v) : '—';
+
+  el.innerHTML =
+    '<div class="year-nav">' +
+      '<button class="btn btn-ghost btn-sm" onclick="resumoYear--;renderResumo()">◀</button>' +
+      '<span class="year-label">' + resumoYear + '</span>' +
+      '<button class="btn btn-ghost btn-sm" onclick="resumoYear++;renderResumo()">▶</button>' +
+    '</div>' +
+    (!rows.length
+      ? '<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><p>Nenhum job em ' + resumoYear + '.</p></div>'
+      : '<div class="resumo-wrap"><table class="resumo-table">' +
+          '<thead><tr><th>Mês</th><th>Total</th><th>QTD</th><th>RE/MAX</th><th>Airbnb / Prop.</th><th>Ticket médio</th></tr></thead>' +
+          '<tbody>' +
+            rows.map(r =>
+              '<tr>' +
+                '<td>' + r.label + '</td>' +
+                '<td class="resumo-td-val">' + f(r.total) + '</td>' +
+                '<td>' + r.qtd + '</td>' +
+                '<td>' + (r.vRemax ? fmtMoeda(r.vRemax) + ' (' + r.qRemax + ')' : '—') + '</td>' +
+                '<td>' + (r.vAirbnb ? fmtMoeda(r.vAirbnb) + ' (' + r.qAirbnb + ')' : '—') + '</td>' +
+                '<td class="resumo-td-ticket">' + f(r.ticket) + '</td>' +
+              '</tr>'
+            ).join('') +
+          '</tbody>' +
+          '<tfoot><tr>' +
+            '<td>Total ' + resumoYear + '</td>' +
+            '<td class="resumo-tfoot-val">' + fmtMoeda(totTotal) + '</td>' +
+            '<td>' + totQtd + '</td>' +
+            '<td>' + (totRemax ? fmtMoeda(totRemax) + ' (' + qRemax + ')' : '—') + '</td>' +
+            '<td>' + (totAirbnb ? fmtMoeda(totAirbnb) + ' (' + qAirbnb + ')' : '—') + '</td>' +
+            '<td>' + (totQtd ? fmtMoeda(totTotal / totQtd) : '—') + '</td>' +
+          '</tr></tfoot>' +
+        '</table></div>'
+    );
+}
+
+// ── Modal Job ─────────────────────────────────────────────────────────────────
+function openModal(id) {
+  editId = id || null;
+  const j = id ? jobs.find(x => x.id === id) : null;
+  document.getElementById('jobModalTitulo').textContent = j ? 'Editar Job' : 'Novo Job';
+  document.getElementById('fTipo').value       = j?.tipo        || 'RE/MAX Studio 76';
+  jobContatoNome.corretor = j?.corretor     || '';
+  jobContatoNome.cliente  = j?.cliente_nome || '';
+  ['corretor', 'cliente'].forEach(c => { jobContatoLimparCaixinha(c); jobContatoEl(c, 'infoId').classList.remove('show'); });
+  document.getElementById('envioAviso').classList.remove('show');
+  document.getElementById('envioOk').classList.remove('show');
+  document.getElementById('fData').value       = j?.data        || '';
+  document.getElementById('fHorario').value    = j?.horario     || '';
+  document.getElementById('fRua').value        = j?.rua         || '';
+  document.getElementById('fNum').value        = j?.num         || '';
+  document.getElementById('fComplemento').value= j?.complemento || '';
+  document.getElementById('fEdificio').value   = j?.edificio    || '';
+  document.getElementById('fTipoImovel').value = j?.tipo_imovel || 'APTO';
+  document.getElementById('fMetragem').value   = j?.metragem    || '<100';
+  setCur('fPreco', j?.preco);
+  document.getElementById('fCodigo').value     = j?.codigo      || '';
+  document.getElementById('fEntFoto').value    = j?.ent_foto    || '';
+  document.getElementById('fEntVideo').value   = j?.ent_video   || '';
+  document.getElementById('fEntReels').value   = j?.ent_reels   || '';
+  document.getElementById('fStatus').value     = j?.status      || 'agendado';
+  document.getElementById('fCreditoPara').value= j?.credito_para|| '';
+  document.getElementById('fTipoCredito').value= j?.tipo_credito|| '';
+  document.getElementById('fLink').value       = j?.link        || '';
+  document.getElementById('fObs').value        = j?.obs         || '';
+
+  activeSvcs = new Set(j?.servicos || []);
+  ['F', 'Y', 'R'].forEach(s => document.getElementById('svc' + s).classList.toggle('on', activeSvcs.has(s)));
+  precoManual = true;   // ao abrir não sobrescreve preço já salvo; toggles de serviço/metragem liberam o auto
+
+  document.getElementById('btnDel').style.display = j ? '' : 'none';
+  onTipoChange();
+  updateEnvioUI();
+  document.getElementById('jobOverlay').classList.add('open');
+  setTimeout(() => {
+    const campo = campoDoTipo(tipoAtualDoForm());
+    if (!jobContatoNome[campo]) jobContatoEl(campo, 'inputId').focus();
+    AlexMasks.applyMasks(document.getElementById('jobOverlay'));
+  }, 50);
+}
+
+function closeModal() {
+  document.getElementById('jobOverlay').classList.remove('open');
+  editId = null;
+  activeSvcs = new Set();
+  jobContatoNome = { corretor: '', cliente: '' };
+  ['corretor', 'cliente'].forEach(c => jobContatoLimparCaixinha(c));   // D-6
+  precoManual = false;
+}
+
+function onTipoChange() {
+  const tipo    = tipoAtualDoForm();
+  const isRemax = tipo === 'RE/MAX Studio 76';
+  const fica    = campoDoTipo(tipo);
+  const sai     = fica === 'corretor' ? 'cliente' : 'corretor';
+
+  // O que não vale para o tipo sai da tela — e aparece escrito, para não sumir calado
+  // (R-12/R-14 · 03_UXUI.md §6, impacto 3). A caixinha entra na conta porque ela também
+  // guarda dado digitado, inclusive telefone (CA-31 · 05_QA.md, P-3).
+  // O aviso do envio fala de um contato que pode ter acabado de sair: não pode ficar velho
+  // na tela apontando para um campo escondido (05_QA.md, item menor 4).
+  ['envioAviso', 'envioOk'].forEach(k => { const e = document.getElementById(k); e.classList.remove('show'); e.innerHTML = ''; });
+
+  const cxSai   = jobContatoCaixinha(sai);
+  const nomeSai = cxSai.nome || jobContatoNome[sai] || '';
+  const telSai  = cxSai.tel || '';
+  jobContatoNome[sai] = '';
+  jobContatoLimparCaixinha(sai);
+  jobContatoDisplay('corretor');
+  jobContatoDisplay('cliente');
+  ['corretor', 'cliente'].forEach(c => { const el = jobContatoEl(c, 'infoId'); el.classList.remove('show'); el.innerHTML = ''; });
+
+  const nomeFica = jobContatoNome[fica] || '';
+  const repetido = nomeSai && nomeFica && normNome(nomeSai) === normNome(nomeFica);
+  if ((nomeSai || telSai) && !repetido) {
+    const oQueSai = (nomeSai ? '<b>' + escHtml(nomeSai) + '</b>' : 'o que você digitou') +
+      (telSai ? ' e o telefone <b>' + escHtml(telSai) + '</b>' : '');
+    let corpo = 'O ' + CONTATO_CAMPOS[sai].rotulo + ' ' + oQueSai + ' saiu deste job — jobs de ' +
+      escHtml(tipo) + ' guardam o <b>' + CONTATO_CAMPOS[fica].rotulo + '</b>';
+    if (nomeFica) {
+      // Campo de destino ocupado: informa, e NÃO oferece o link que apagaria o nome (P-2).
+      corpo += ', que aqui é <b>' + escHtml(nomeFica) + '</b>.';
+    } else if (telSai || cxSai.nome) {
+      corpo += '. <span class="fe-link" onclick="jobContatoTrazerCaixinha(\'' + fica + '\', \'' + escAttr(nomeSai) + '\', \'' + escAttr(telSai) + '\')">Trazer nome e telefone para cá</span>';
+    } else {
+      corpo += '. <span class="fe-link" onclick="jobContatoUsarNome(\'' + fica + '\', \'' + escAttr(nomeSai) + '\')">Usar este nome aqui</span>';
+    }
+    const info = jobContatoEl(fica, 'infoId');
+    info.innerHTML = _svgTroca + '<div>' + corpo + '</div>';
+    info.classList.add('show');
+  }
+
+  document.getElementById('secCorretor').style.display  = isRemax ? '' : 'none';
+  document.getElementById('secCliente').style.display   = isRemax ? 'none' : '';
+  document.getElementById('secSvcs').style.display      = isRemax ? '' : 'none';
+  document.getElementById('secCodigo').style.display    = isRemax ? '' : 'none';
+  atualizarPrecoSugerido();
+  updateEnvioUI();
+}
+
+function toggleSvc(s) {
+  if (activeSvcs.has(s)) activeSvcs.delete(s); else activeSvcs.add(s);
+  document.getElementById('svc' + s).classList.toggle('on', activeSvcs.has(s));
+  precoManual = false;
+  atualizarPrecoSugerido();
+  updateEnvioUI();
+}
+
+// ── Enviar Foto/YouTube — abre o WhatsApp do contato com o link do material ───
+function fmtDataHora(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' +
+         String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function contatoNome(j) {
+  return (campoDoTipo(j.tipo) === 'corretor' ? j.corretor : j.cliente_nome) || '';
+}
+function contatoTel(j) {
+  if (!j) return null;
+  const p = pessoaPorNome(contatoNome(j));
+  return (p && p.tel) ? p.tel : null;
+}
+function waDigits(tel) {
+  let d = String(tel || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.length <= 11) d = '55' + d;
+  return d;
+}
+
+// Foto, YouTube e Reels são enviados de forma independente — cada um no seu tempo.
+const ENVIO_CFG = {
+  foto:  { svc: 'F', label: 'Foto',    enviado: 'Fotos enviadas',   naoEnviado: 'Fotos ainda não enviadas',   msg: 'seguem as fotos',           campoEm: 'enviado_foto_em',  campoLink: 'enviado_foto_link',  entField: 'ent_foto',  entInput: 'fEntFoto' },
+  video: { svc: 'Y', label: 'YouTube', enviado: 'YouTube enviado',  naoEnviado: 'YouTube ainda não enviado',  msg: 'segue o vídeo no YouTube',  campoEm: 'enviado_video_em', campoLink: 'enviado_video_link', entField: 'ent_video', entInput: 'fEntVideo' },
+  reels: { svc: 'R', label: 'Reels',   enviado: 'Reels enviado',    naoEnviado: 'Reels ainda não enviado',    msg: 'segue o reels',             campoEm: 'enviado_reels_em', campoLink: 'enviado_reels_link', entField: 'ent_reels', entInput: 'fEntReels' },
+};
+
+// Por que o envio não pode acontecer — cada motivo tem um texto próprio, porque a
+// mensagem antiga ("sem telefone cadastrado") mentia no caso dominante (01_REQUISITOS.md, P-1).
+function envioSituacao() {
+  if (!editId) return { ok: false, motivo: 'novo', nome: '' };
+  const j = jobs.find(x => x.id === editId);
+  if (!j) return { ok: false, motivo: 'novo', nome: '' };
+  const nome = contatoNome(j).trim();
+  if (!nome) return { ok: false, motivo: 'sem-nome', nome: '' };
+  const p = pessoaPorNome(nome);
+  if (!p)     return { ok: false, motivo: 'fora',    nome };
+  if (!p.tel) return { ok: false, motivo: 'sem-tel', nome: p.nome };
+  return { ok: true, motivo: null, nome: p.nome, tel: p.tel };
+}
+
+function mostrarAvisoEnvio(s) {
+  const av = document.getElementById('envioAviso');
+  const ok = document.getElementById('envioOk');
+  ok.classList.remove('show'); ok.innerHTML = '';
+  const campo = campoDoTipo(tipoAtualDoForm());
+  let corpo;
+  if (s.motivo === 'sem-nome') {
+    corpo = 'Este job não tem nome de ' + CONTATO_CAMPOS[campo].rotulo + '. Preencha o campo e salve o job para poder enviar.';
+  } else if (s.motivo === 'sem-tel') {
+    corpo = '<b>' + escHtml(s.nome) + '</b> está na sua agenda, mas <b>sem telefone</b>. ' +
+      '<a class="fe-link" href="contatos.html" target="_blank" rel="noopener">Completar o telefone</a>';
+  } else {
+    corpo = '<b>' + escHtml(s.nome) + '</b> não está na sua agenda de Contatos, então não tenho o WhatsApp dela.' +
+      '<div style="margin-top:8px"><button type="button" class="btn btn-sm" onclick="jobContatoNovoToggle(\'' + campo + '\', true)">' +
+      _svgUserPlus + 'Guardar ' + escHtml(s.nome) + ' em Contatos</button></div>';
+  }
+  av.innerHTML = _svgAlerta + '<div>' + corpo + '</div>';
+  av.classList.add('show');
+}
+
+function updateEnvioUI() {
+  const j = editId ? jobs.find(x => x.id === editId) : null;
+  const s = envioSituacao();
+  if (s.ok) {
+    const av = document.getElementById('envioAviso');
+    av.classList.remove('show'); av.innerHTML = '';
+  }
+
+  Object.entries(ENVIO_CFG).forEach(([tipo, cfg]) => {
+    const btn  = document.getElementById('btnEnviar' + tipo[0].toUpperCase() + tipo.slice(1));
+    const line = document.getElementById('envio' + tipo[0].toUpperCase() + tipo.slice(1) + 'Line');
+    const show = activeSvcs.has(cfg.svc);
+    btn.style.display  = show ? '' : 'none';
+    line.style.display = show ? '' : 'none';
+
+    // Botão aceso quando o job já existe: quem explica o que falta é o aviso, não o botão
+    // apagado (decisão do Alex em 24/08, P-1 opção A).
+    btn.disabled = (s.motivo === 'novo');
+    btn.title    = (s.motivo === 'novo') ? 'Salve o job antes de enviar' : '';
+
+    if (show) {
+      const enviado = j && j[cfg.campoEm];
+      line.className = 'envio-line' + (enviado ? '' : ' muted');
+      line.innerHTML = enviado
+        ? cfg.enviado + ' em ' + fmtDataHora(enviado) + ' — <a href="' + escAttr(j[cfg.campoLink] || '') + '" target="_blank" rel="noopener">' + escHtml(j[cfg.campoLink] || '') + '</a> <span class="envio-undo" onclick="desfazerEnvio(\'' + tipo + '\')">Desfazer</span>'
+        : cfg.naoEnviado;
+    }
+  });
+}
+
+// Desfaz um envio feito por engano: apaga data+link (e a Entrega correspondente) e,
+// se o job só tinha virado "Não Pago" por causa desse envio, devolve pra "Agendado".
+async function desfazerEnvio(tipo) {
+  const cfg = ENVIO_CFG[tipo];
+  if (!editId) return;
+  const j = jobs.find(x => x.id === editId);
+  if (!j) return;
+  if (j.status === 'pago') { toast('⚠️ Este job já está Pago — ajuste o status manualmente antes de desfazer o envio'); return; }
+  if (!confirm('Desfazer o envio de ' + cfg.label + '? Isso apaga a data e o link registrados.')) return;
+
+  const campo = { [cfg.campoEm]: null, [cfg.campoLink]: null };
+  if (cfg.entField) campo[cfg.entField] = null;
+  if (j.status === 'nao_pago') campo.status = 'agendado';
+
+  const { error } = await db().from('jobs').update(campo).eq('id', editId);
+  if (error) { toast('❌ Erro ao desfazer: ' + error.message); return; }
+  Object.assign(j, campo);
+  if (cfg.entInput) document.getElementById(cfg.entInput).value = '';
+  if (campo.status) document.getElementById('fStatus').value = campo.status;
+  updateEnvioUI();
+  updateJobsListOnly();
+  toast('✅ Envio de ' + cfg.label + ' desfeito' + (campo.status ? ' — job voltou para "Agendado"' : ''));
+}
+
+// Se tudo que foi contratado (Foto/YouTube/Reels, cada um só se marcado) já foi enviado, o job passa sozinho pra "Não Pago"
+function statusAutoFeito(j) {
+  if (j.status === 'pago' || j.status === 'nao_pago' || j.status === 'feito') return null;
+  const svcs = j.servicos || [];
+  const precisa = Object.values(ENVIO_CFG).filter(cfg => svcs.includes(cfg.svc));
+  if (!precisa.length) return null;
+  const tudoOk = precisa.every(cfg => !!j[cfg.campoEm]);
+  return tudoOk ? 'nao_pago' : null;
+}
+
+async function enviarMaterial(tipo) {
+  const cfg = ENVIO_CFG[tipo];
+  if (!editId) { toast('⚠️ Salve o job antes de enviar'); return; }
+  const j = jobs.find(x => x.id === editId);
+  if (!j) return;
+  const link = document.getElementById('fLink').value.trim();
+  if (!link) { toast('⚠️ Preencha o Link do material antes de enviar'); return; }
+  const s = envioSituacao();
+  if (!s.ok) { mostrarAvisoEnvio(s); return; }
+  const tel = s.tel;
+
+  const primeiroNome = (contatoNome(j) || 'Contato').split(' ')[0];
+  const ref = jobRef(j);
+  const msg = 'Olá ' + primeiroNome + ', ' + cfg.msg + ' do imóvel ' + ref + ':\n' + link;
+  window.open('https://wa.me/' + waDigits(tel) + '?text=' + encodeURIComponent(msg), '_blank');
+
+  const hoje = todayStr();
+  const campo = { [cfg.campoEm]: new Date().toISOString(), [cfg.campoLink]: link };
+  if (cfg.entField) campo[cfg.entField] = hoje;
+
+  const jPrevisto = Object.assign({}, j, campo);
+  const novoStatus = statusAutoFeito(jPrevisto);
+  if (novoStatus) { campo.status = novoStatus; campo.pago = false; }
+
+  const { error } = await db().from('jobs').update(campo).eq('id', editId);
+  if (error) { toast('❌ Erro ao registrar envio: ' + error.message); return; }
+  Object.assign(j, campo);
+  if (cfg.entInput) document.getElementById(cfg.entInput).value = hoje;
+  if (novoStatus) document.getElementById('fStatus').value = novoStatus;
+  updateEnvioUI();
+  updateJobsListOnly();
+  toast('✅ Envio registrado' + (novoStatus ? ' — job passou para "' + STATUS[novoStatus].label + '" (tudo entregue)' : ''));
+}
+
+// ── Preço automático RE/MAX Studio 76 (item 7.1) ──────────────────────────────
+// Chave de serviços na ordem F, Y (vídeo), R. Tabela só cobre as combinações que a
+// Studio 76 realmente contrata; combinações fora dela ficam com preço manual.
+const PRECO_REMAX = {
+  'F':     { '<100': 200, '>100': 200 },
+  'R':     { '<100': 200, '>100': 250 },
+  'F+Y':   { '<100': 250, '>100': 300 },
+  'F+R':   { '<100': 250, '>100': 300 },
+  'F+Y+R': { '<100': 350, '>100': 400 },
+};
+function svcKey() {
+  return ['F', 'Y', 'R'].filter(s => activeSvcs.has(s)).join('+');
+}
+function atualizarPrecoSugerido() {
+  const hint = document.getElementById('priceHint');
+  if (document.getElementById('fTipo').value !== 'RE/MAX Studio 76') {
+    hint.textContent = 'Preço sugerido: —';
+    return;
+  }
+  const metr = document.getElementById('fMetragem').value;
+  const tab  = PRECO_REMAX[svcKey()];
+  const val  = tab ? tab[metr] : null;
+  if (val == null) {
+    hint.textContent = 'Preço sugerido: —';
+    return;
+  }
+  hint.textContent = 'Preço sugerido: ' + fmtMoeda(val);
+  if (!precoManual) setCur('fPreco', val);
+}
+
+// ── Campo de contato do job: Corretor e Cliente no MESMO mecanismo ────────────
+// Um conjunto de funções para os dois campos (R-5/CA-11). O porquê e o que foi
+// descartado estão em Esteira/photo-vinculo-contato-job/02_ARQUITETURA.md (D-1).
+const CONTATO_CAMPOS = {
+  corretor: { rotulo: 'corretor', inputId: 'fCorretor',     selId: 'jobCorretorSel', txtId: 'jobCorretorSelTxt', telId: 'jobCorretorSelTel', dropId: 'jobCorretorDrop', warnId: 'jobCorretorWarn', infoId: 'jobCorretorInfo', boxId: 'jobNovoCorretorBox', novoNomeId: 'fJobNovoCorrNome', novoTelId: 'fJobNovoCorrTel', btnCriarId: 'btnCriarCorretor' },
+  cliente:  { rotulo: 'cliente',  inputId: 'fClienteNome',  selId: 'jobClienteSel',  txtId: 'jobClienteSelTxt',  telId: 'jobClienteSelTel',  dropId: 'jobClienteDrop',  warnId: 'jobClienteWarn',  infoId: 'jobClienteInfo',  boxId: 'jobNovoClienteBox',  novoNomeId: 'fJobNovoCliNome',  novoTelId: 'fJobNovoCliTel',  btnCriarId: 'btnCriarCliente' },
+};
+// A etiqueta que o contato recebe em Contatos vem do TIPO do job, escrita como a tela
+// de Contatos escreve (maiúscula e acento) — R-10.
+const TIPO_ETIQUETA = { 'RE/MAX Studio 76': 'Corretor', 'Proprietário': 'Proprietário', 'Anfitrião (Airbnb)': 'Anfitrião' };
+function campoDoTipo(tipo)    { return tipo === 'RE/MAX Studio 76' ? 'corretor' : 'cliente'; }
+function etiquetaDoTipo(tipo) { return TIPO_ETIQUETA[tipo] || 'Corretor'; }
+function tipoAtualDoForm()    { return document.getElementById('fTipo').value; }
+
+// Régua única de comparação de nome (R-18): a busca, o "existe em Contatos?" e o botão
+// de envio usam esta mesma função — se divergirem, a tela se contradiz (D-3).
+function normNome(s) {
+  return String(s == null ? '' : s).trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+function pessoaPorNome(nome) {
+  const n = normNome(nome);
+  if (!n) return null;
+  return (pessoasAll || []).find(p => normNome(p.nome) === n) || null;
+}
+
+function jobContatoEl(campo, chave) { return document.getElementById(CONTATO_CAMPOS[campo][chave]); }
+
+function jobContatoDisplay(campo) {
+  const nome = jobContatoNome[campo] || '';
+  const p    = nome ? pessoaPorNome(nome) : null;
+  const sel  = jobContatoEl(campo, 'selId');
+  const inp  = jobContatoEl(campo, 'inputId');
+  const warn = jobContatoEl(campo, 'warnId');
+  jobContatoEl(campo, 'dropId').style.display = 'none';
+  if (p) {
+    sel.style.display = 'flex';
+    jobContatoEl(campo, 'txtId').textContent = nome;
+    jobContatoEl(campo, 'telId').textContent = p.tel || '';
+    inp.style.display = 'none';
+    inp.value = '';
+    inp.classList.remove('warn');
+    warn.classList.remove('show'); warn.innerHTML = '';
+  } else {
+    sel.style.display = 'none';
+    inp.style.display = '';
+    inp.value = nome;
+    inp.classList.toggle('warn', !!nome);
+    if (nome) {
+      warn.innerHTML = _svgAlerta + '<div><b>' + escHtml(nome) + '</b> não está na sua agenda de Contatos. Sem ela, não dá para mandar as fotos por WhatsApp neste job. ' +
+        '<span class="fe-link" onclick="jobContatoClear(\'' + campo + '\')">Procurar na agenda</span> · ' +
+        '<span class="fe-link" onclick="jobContatoNovoToggle(\'' + campo + '\', true)">Cadastrar ' + escHtml(nome) + '</span></div>';
+      warn.classList.add('show');
+    } else {
+      warn.classList.remove('show'); warn.innerHTML = '';
+    }
+  }
+}
+
+function jobContatoBuscar(campo) {
+  const inp  = jobContatoEl(campo, 'inputId');
+  const drop = jobContatoEl(campo, 'dropId');
+  const warn = jobContatoEl(campo, 'warnId');
+  const info = jobContatoEl(campo, 'infoId');
+  jobContatoNome[campo] = inp.value.trim();   // nome livre digitado continua valendo (R-4)
+  inp.classList.remove('warn');
+  warn.classList.remove('show'); warn.innerHTML = '';
+  info.classList.remove('show'); info.innerHTML = '';
+  const q = normNome(inp.value);
+  if (!q) { drop.style.display = 'none'; return; }
+  const res  = (pessoasAll || []).filter(p => normNome(p.nome).includes(q)).slice(0, 8);
+  const digitado = inp.value.trim();
+  const linhaNova = '<div class="job-drop-new" onmousedown="jobContatoNovoToggle(\'' + campo + '\', true)">' + _svgUserPlus +
+    'Cadastrar "' + escHtml(digitado) + '" em Contatos</div>';
+  drop.innerHTML = (res.length
+    ? res.map(p => '<div class="job-drop-item" onmousedown="jobContatoSel(\'' + campo + '\', \'' + p.id + '\')">' + _svgUser + escHtml(p.nome) +
+        (p.tel ? ' <span class="ds-meta">' + escHtml(p.tel) + '</span>' : '') + '</div>').join('')
+    : '<div class="job-drop-empty">Ninguém em Contatos com esse nome.</div>') + linhaNova;
+  drop.style.display = '';
+}
+
+function jobContatoSel(campo, id) {
+  const p = (pessoasAll || []).find(x => x.id === id);
+  if (!p) return;
+  jobContatoNome[campo] = p.nome;
+  jobContatoLimparCaixinha(campo);   // escolher da lista é o 3º momento da D-6 (05_QA.md, P-1)
+  jobContatoDisplay(campo);
+  jobContatoEl(campo, 'infoId').classList.remove('show');
+}
+
+function jobContatoClear(campo) {
+  jobContatoNome[campo] = '';
+  jobContatoDisplay(campo);
+  jobContatoEl(campo, 'inputId').focus();
+}
+
+// Traz para o campo que ficou o que saiu ao trocar o tipo do job (03_UXUI.md §6, impacto 3).
+// A recusa de sobrescrever é o conserto do 05_QA.md P-2: um clique trocava o nome da cliente
+// por um resíduo, sem pergunta e sem volta. Nome existente nunca é substituído por aqui.
+function jobContatoUsarNome(campo, nome) {
+  if (jobContatoNome[campo]) return;
+  jobContatoNome[campo] = nome;
+  jobContatoDisplay(campo);
+  const info = jobContatoEl(campo, 'infoId');
+  info.classList.remove('show'); info.innerHTML = '';
+}
+
+// Mesma ideia para o que estava na caixinha: nome E telefone vão para a caixinha do campo
+// que ficou, à vista, e só com um clique do Alex (05_QA.md, P-3).
+function jobContatoTrazerCaixinha(campo, nome, tel) {
+  if (jobContatoNome[campo]) return;
+  jobContatoEl(campo, 'novoNomeId').value = nome;
+  jobContatoEl(campo, 'novoTelId').value  = tel || '';
+  jobContatoEl(campo, 'boxId').style.display = '';
+  const info = jobContatoEl(campo, 'infoId');
+  info.classList.remove('show'); info.innerHTML = '';
+  jobContatoEl(campo, tel ? 'novoNomeId' : 'novoTelId').focus();
+}
+
+function jobContatoNovoToggle(campo, abrirSempre) {
+  const el = jobContatoEl(campo, 'boxId');
+  const aberta = el.style.display !== 'none';
+  if (aberta && !abrirSempre) { jobContatoLimparCaixinha(campo); return; }   // fechar É esvaziar
+  el.style.display = '';
+  const nomeCampo = jobContatoEl(campo, 'novoNomeId');
+  const digitado  = jobContatoEl(campo, 'inputId').value.trim() || jobContatoNome[campo] || '';
+  if (digitado && !nomeCampo.value.trim()) nomeCampo.value = digitado;
+  jobContatoEl(campo, 'dropId').style.display = 'none';
+  el.scrollIntoView({ block: 'nearest' });
+  (nomeCampo.value.trim() ? jobContatoEl(campo, 'novoTelId') : nomeCampo).focus();
+}
+
+// Esconder a caixinha sem esvaziar deixa um rascunho invisível que o salvamento lê — foi
+// assim que o nome escolhido na lista perdia para ele (05_QA.md, P-1). Por isso existe UMA
+// função só: fechar e esvaziar são a mesma coisa. Ver 02_ARQUITETURA.md, D-6.
+function jobContatoLimparCaixinha(campo) {
+  jobContatoEl(campo, 'novoNomeId').value = '';
+  jobContatoEl(campo, 'novoTelId').value  = '';
+  jobContatoEl(campo, 'boxId').style.display = 'none';
+}
+function jobContatoCaixinha(campo) {
+  return {
+    nome: jobContatoEl(campo, 'novoNomeId').value.trim(),
+    tel:  jobContatoEl(campo, 'novoTelId').value.trim(),
+  };
+}
+
+let _criandoContato = false;
+async function jobContatoCriar(campo) {
+  if (_criandoContato) return;                       // clique duplo não cria dois contatos (CA-9)
+  const nome = jobContatoEl(campo, 'novoNomeId').value.trim();
+  if (!nome) { toast('⚠️ Preencha o nome'); return; }
+  const tel  = jobContatoEl(campo, 'novoTelId').value.trim();
+  const btn  = jobContatoEl(campo, 'btnCriarId');
+  _criandoContato = true;
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  const { data, error } = await db().from('pessoas')
+    .insert({ nome, tel: tel || null, tipos: [etiquetaDoTipo(tipoAtualDoForm())], updated_at: new Date().toISOString() })
+    .select('id,nome,tel').single();
+  _criandoContato = false;
+  if (btn) { btn.disabled = false; btn.textContent = 'Salvar contato'; }
+  if (error) { toast('❌ ' + error.message); return; }
+  pessoasAll.push(data);
+  jobContatoLimparCaixinha(campo);
+  jobContatoSel(campo, data.id);
+  const ok = document.getElementById('envioOk');
+  const av = document.getElementById('envioAviso');
+  const vinhaDoAviso = av.classList.contains('show');
+  updateEnvioUI();
+  const s = envioSituacao();
+  if (vinhaDoAviso) {
+    av.classList.remove('show'); av.innerHTML = '';
+    ok.innerHTML = _svgOk + '<div>Pronto — <b>' + escHtml(data.nome) + '</b> está em Contatos' + (data.tel ? ' com telefone' : ', sem telefone') + '. ' +
+      (s.ok ? 'Agora dá para enviar.' : 'Salve o job para o envio passar a funcionar.') + '</div>';
+    ok.classList.add('show');
+  }
+  toast('✅ ' + data.nome + ' agora está em Contatos');
+}
+
+// ── CRUD ──────────────────────────────────────────────────────────────────────
+let _salvandoJob = false;
+async function salvarJob() {
+  if (_salvandoJob) return;                       // clique duplo não salva duas vezes (CA-20)
+  const tipo = tipoAtualDoForm();
+  const data = document.getElementById('fData').value;
+  if (!data) { toast('⚠️ Data obrigatória'); return; }
+
+  const wasNaoPago = editId ? (jobs.find(x => x.id === editId)?.status === 'nao_pago' || jobs.find(x => x.id === editId)?.status === 'feito') : false;
+  const newStatus  = document.getElementById('fStatus').value;
+  const tornouPago = wasNaoPago && newStatus === 'pago';
+
+  // O que o Alex digitou na caixinha vale sobre o campo de busca e é resgatado, nunca
+  // descartado (R-15/R-16 · 02_ARQUITETURA.md, D-8).
+  const campoVale = campoDoTipo(tipo);
+  const caixinha  = jobContatoCaixinha(campoVale);
+  const nomeVale  = caixinha.nome || jobContatoNome[campoVale] || jobContatoEl(campoVale, 'inputId').value.trim() || '';
+  const nomeAntes = jobContatoNome[campoVale] || '';
+
+  const payload = {
+    tipo,
+    // Só o nome que vale para o tipo é gravado; o outro campo fica vazio (R-13).
+    cliente_nome:  campoVale === 'cliente'  ? (nomeVale || null) : null,
+    corretor:      campoVale === 'corretor' ? (nomeVale || null) : null,
+    data,
+    horario:       document.getElementById('fHorario').value.trim()    || null,
+    rua:           document.getElementById('fRua').value.trim()         || null,
+    num:           document.getElementById('fNum').value.trim()         || null,
+    complemento:   document.getElementById('fComplemento').value.trim() || null,
+    edificio:      document.getElementById('fEdificio').value.trim()    || null,
+    tipo_imovel:   document.getElementById('fTipoImovel').value        || null,
+    metragem:      document.getElementById('fMetragem').value          || null,
+    servicos:      [...activeSvcs],
+    preco:         parseCur(document.getElementById('fPreco').value),
+    codigo:        document.getElementById('fCodigo').value.trim()     || null,
+    ent_foto:      document.getElementById('fEntFoto').value           || null,
+    ent_video:     document.getElementById('fEntVideo').value          || null,
+    ent_reels:     document.getElementById('fEntReels').value          || null,
+    status:        newStatus,
+    pago:          newStatus === 'pago',
+    credito_para:  document.getElementById('fCreditoPara').value.trim()|| null,
+    tipo_credito:  document.getElementById('fTipoCredito').value       || null,
+    link:          document.getElementById('fLink').value.trim()       || null,
+    obs:           document.getElementById('fObs').value.trim()        || null,
+    updated_at:    new Date().toISOString()
+  };
+
+  let jobIdSalvo = editId;
+  let error;
+  const btnSalvar = document.getElementById('btnSalvarJob');
+  _salvandoJob = true;
+  if (btnSalvar) btnSalvar.disabled = true;
+  if (editId) {
+    ({ error } = await db().from('jobs').update(payload).eq('id', editId));
+  } else {
+    const { data: inserted, error: err } = await db().from('jobs').insert(payload).select().single();
+    error = err;
+    if (inserted) jobIdSalvo = inserted.id;
+  }
+  _salvandoJob = false;
+  if (btnSalvar) btnSalvar.disabled = false;
+
+  if (error) { toast('❌ Erro: ' + error.message); return; }
+
+  // O job já está salvo; a oferta só é enfileirada depois disso (R-7/CA-15).
+  const eraEdicao = !!editId;
+  const jaExiste  = nomeVale ? pessoaPorNome(nomeVale) : null;
+  _ofertaPendente = (nomeVale && !jaExiste && jobIdSalvo)
+    ? { nome: nomeVale, tel: caixinha.tel, campo: campoVale, tipo, jobId: jobIdSalvo, veioDaCaixinha: !!caixinha.nome, nomeNoJob: nomeVale, nomeAntes }
+    : null;
+
+  // Se acabou de ser marcado como pago, abre janela de confirmação
+  if (tornouPago && payload.preco && jobIdSalvo) {
+    abrirJanelaRecebimento(payload, jobIdSalvo);
+  } else {
+    toast(eraEdicao ? '✅ Job atualizado' : '✅ Job criado');
+  }
+
+  closeModal();
+  await carregarJobs();
+  if (currentTab === 'jobs')   renderJobs();
+  if (currentTab === 'resumo') renderResumo();
+  // Uma janela por vez: se a de recebimento abriu, a oferta espera a vez dela (D-5).
+  if (!document.getElementById('recebOverlay').classList.contains('open')) abrirOfertaPendente();
+}
+
+async function excluirJob() {
+  if (!editId || !confirm('Excluir este job?')) return;
+  const { error } = await db().from('jobs').delete().eq('id', editId);
+  if (error) { toast('❌ Erro: ' + error.message); return; }
+  toast('🗑️ Job excluído');
+  closeModal();
+  await carregarJobs();
+  if (currentTab === 'jobs')   renderJobs();
+  if (currentTab === 'resumo') renderResumo();
+}
+
+// ── Relatório Studio 76 — cobrança dos jobs Feito/Não pago do mês anterior ────
+const STUDIO76_TEL = '+55 11 94728-9029';
+const SVC_TEXT = { F: 'Foto', Y: 'YouTube', R: 'Reels' };
+
+function abrirRelatorioStudio76() {
+  const now = new Date();
+  const refM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const ym = refM.getFullYear() + '-' + String(refM.getMonth() + 1).padStart(2, '0');
+  const label = MONTHS[refM.getMonth()] + ' de ' + refM.getFullYear();
+
+  const lista = jobs.filter(j =>
+    j.tipo === 'RE/MAX Studio 76' &&
+    (j.status === 'feito' || j.status === 'nao_pago') &&
+    (j.data || '').startsWith(ym)
+  ).sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+
+  const total = lista.reduce((a, j) => a + Number(j.preco || 0), 0);
+  document.getElementById('relStudioSub').textContent = lista.length
+    ? label + ' · ' + lista.length + ' job' + (lista.length !== 1 ? 's' : '') + ' feito' + (lista.length !== 1 ? 's' : '') + ', ainda não pago' + (lista.length !== 1 ? 's' : '') + ' · valor total ' + fmtMoeda(total)
+    : 'Nenhum job Feito/Não pago da RE/MAX Studio 76 em ' + label + '.';
+
+  const texto = lista.map((j, i) => {
+    const end = [j.rua, j.num].filter(Boolean).join(' ');
+    const svcs = ['F', 'Y', 'R'].filter(s => (j.servicos || []).includes(s)).map(s => SVC_TEXT[s]).join(' + ');
+    return (i + 1) + '. ' + fmtData(j.data) + ' - ' + end + ' - ' + (j.codigo || '—') + ' - ' + (j.corretor || '—') + ' - ' + fmtMoeda(j.preco) + ' - ' + (svcs || '—');
+  }).join('\n');
+
+  const textarea = document.getElementById('relStudioTexto');
+  const actions   = document.getElementById('relStudioActions');
+  textarea.value = texto;
+  textarea.style.display = lista.length ? '' : 'none';
+  actions.style.display  = lista.length ? '' : 'none';
+  document.getElementById('relStudioOverlay').classList.add('open');
+}
+
+function fecharRelatorioStudio76() {
+  document.getElementById('relStudioOverlay').classList.remove('open');
+}
+
+async function copiarRelatorioStudio76() {
+  const texto = document.getElementById('relStudioTexto').value;
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast('✅ Texto copiado');
+  } catch (e) {
+    toast('❌ Não foi possível copiar — selecione e copie manualmente');
+  }
+}
+
+function enviarRelatorioStudio76() {
+  const texto = document.getElementById('relStudioTexto').value;
+  window.open('https://wa.me/' + waDigits(STUDIO76_TEL) + '?text=' + encodeURIComponent(texto), '_blank');
+}
+
+// ── Migração v1 → v2 ─────────────────────────────────────────────────────────
+function verificarMigracao() {
+  try {
+    const raw = localStorage.getItem('aos_photo');
+    if (!raw) return;
+    const dados = JSON.parse(raw);
+    if (Array.isArray(dados) && dados.length > 0 && jobs.length === 0) {
+      document.getElementById('btnMigrar').style.display = '';
+    }
+  } catch (e) { /* nada */ }
+}
+
+async function migrarDados() {
+  let v1;
+  try { v1 = JSON.parse(localStorage.getItem('aos_photo') || '[]'); }
+  catch (e) { toast('❌ Erro ao ler dados do v1'); return; }
+  if (!v1.length) { toast('Nenhum dado para migrar'); return; }
+  if (!confirm('Migrar ' + v1.length + ' jobs do v1?')) return;
+
+  const registros = v1.map(j => ({
+    tipo:         j.tipo          || 'RE/MAX Studio 76',
+    cliente_nome: j.clienteNome   || null,
+    corretor:     j.corretor      || null,
+    data:         j.data          || null,
+    horario:      j.horario       || null,
+    rua:          j.rua           || null,
+    num:          j.num           || null,
+    edificio:     j.edificio      || null,
+    tipo_imovel:  j.tipoImovel    || null,
+    metragem:     j.metragem      || null,
+    servicos:     Array.isArray(j.svcs) ? j.svcs : [],
+    preco:        parseFloat(j.preco) || null,
+    codigo:       j.codigo        || null,
+    ent_foto:     j.entFoto       || null,
+    ent_video:    j.entVideo      || null,
+    status:       j.status || (j.pago === 'S' ? 'pago' : 'agendado'),
+    pago:         j.status === 'pago' || j.pago === 'S',
+    credito_para: j.creditoPara   || null,
+    tipo_credito: j.tipoCredito   || null,
+    link:         j.link          || null,
+    obs:          j.obs           || null,
+  }));
+
+  const BATCH = 50;
+  let erros = 0;
+  for (let i = 0; i < registros.length; i += BATCH) {
+    const { error } = await db().from('jobs').insert(registros.slice(i, i + BATCH));
+    if (error) { erros++; console.error(error); }
+  }
+
+  if (erros > 0) toast('⚠️ Migração com ' + erros + ' erro(s)');
+  else toast('✅ ' + registros.length + ' jobs migrados!');
+
+  document.getElementById('btnMigrar').style.display = 'none';
+  await carregarJobs();
+  renderJobs();
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+init().catch(e => {
+  document.getElementById('sv-jobs').innerHTML =
+    '<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><p>Falha ao conectar: ' + e.message + '</p></div>';
+});
+
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+  // clock and theme handlers moved to js/sidebar.js
+})();
+
+// ── Janela: Confirmar recebimento ─────────────────────────────────────────────
+let _recebPendente = null;
+
+function inferirCategoria(servicos) {
+  const s = new Set(servicos || []);
+  if (s.has('F') && s.has('Y') && s.has('R')) return 'Pacote completo F+Y+R';
+  if (s.has('F') && s.has('R')) return 'Foto + Reels';
+  if (s.has('Y')) return 'YouTube';
+  if (s.has('F')) return 'Foto';
+  return 'Foto';
+}
+
+function abrirJanelaRecebimento(payload, jobId) {
+  _recebPendente = { payload, jobId };
+  const nome = payload.tipo === 'RE/MAX Studio 76'
+    ? (payload.corretor || 'RE/MAX Studio 76')
+    : (payload.cliente_nome || payload.tipo || '');
+  document.getElementById('recebData').value    = todayStr();
+  setCur('recebValor', payload.preco);
+  document.getElementById('recebCat').value     = inferirCategoria(payload.servicos);
+  document.getElementById('recebSub').value     = nome;
+  document.getElementById('recebConta').value   = 'Pandora Foto Vídeo';
+  document.getElementById('recebOverlay').classList.add('open');
+  toast('✅ Job salvo como pago');
+}
+
+async function confirmarRecebimento() {
+  if (!_recebPendente) return;
+  const { payload, jobId } = _recebPendente;
+  const data   = document.getElementById('recebData').value;
+  const valor  = parseCur(document.getElementById('recebValor').value) || payload.preco;
+  const cat    = document.getElementById('recebCat').value;
+  const sub    = document.getElementById('recebSub').value.trim() || null;
+  const conta  = document.getElementById('recebConta').value;
+  const nome   = sub || (payload.cliente_nome || payload.tipo || '');
+  if (!data) { toast('⚠️ Data obrigatória'); return; }
+  const { error } = await db().from('lancamentos').insert({
+    data,
+    descricao:  'Job Photo: ' + nome + (payload.rua ? ' — ' + payload.rua : ''),
+    valor,
+    tipo:       'receita',
+    cat,
+    sub,
+    conta,
+    obs:        'Lançamento criado ao confirmar recebimento do job',
+    job_id:     jobId,
+    updated_at: new Date().toISOString()
+  });
+  if (error) { toast('❌ Erro ao criar lançamento: ' + error.message); return; }
+  toast('✅ Lançamento registrado no FMS');
+  fecharJanelaRecebimento();
+}
+
+function pularLancamento() {
+  toast('Job salvo. Lançamento não registrado.');
+  fecharJanelaRecebimento();
+}
+
+function fecharJanelaRecebimento() {
+  document.getElementById('recebOverlay').classList.remove('open');
+  _recebPendente = null;
+  abrirOfertaPendente();   // a fila da D-5: a oferta espera o recebimento sair
+}
+
+// ── Janela: Guardar em Contatos? (a oferta depois de salvar) ──────────────────
+// Uma janela para as três entradas — nome digitado, caixinha resgatada, nome corrigido
+// (02_ARQUITETURA.md, D-4). Nunca trava o salvamento: o job já está no banco (R-7).
+let _ofertaPendente  = null;
+let _ofertaSalvando  = false;
+let _ofertaMascaraOk = false;
+
+function abrirOfertaPendente() {
+  if (!_ofertaPendente) return;
+  if (document.getElementById('contatoOverlay').classList.contains('open')) return;
+  const p = _ofertaPendente;
+  document.getElementById('ofertaNome').value = p.nome;
+  document.getElementById('ofertaTel').value  = p.tel || '';
+  document.getElementById('ofertaTexto').innerHTML =
+    '<b style="color:var(--text)">' + escHtml(p.nome) + '</b> ainda não está na sua agenda. ' +
+    (p.veioDaCaixinha ? 'Confirme para guardar.' : 'Se você guardar, o botão de mandar as fotos por WhatsApp passa a funcionar neste job.');
+  document.getElementById('ofertaResgate').classList.toggle('show', !!p.veioDaCaixinha);
+  document.getElementById('ofertaErro').classList.remove('show');
+  document.getElementById('ofertaRecusaAviso').classList.remove('show');
+  document.getElementById('ofertaAcoes').style.display = '';
+  ofertaAtualizar();
+  const ovl = document.getElementById('contatoOverlay');
+  ovl.classList.add('open');
+  if (!_ofertaMascaraOk) { AlexMasks.applyMasks(ovl); _ofertaMascaraOk = true; }
+  setTimeout(() => document.getElementById(p.tel ? 'ofertaNome' : 'ofertaTel').focus(), 50);
+}
+
+function ofertaAtualizar() {
+  if (!_ofertaPendente) return;
+  const nome = document.getElementById('ofertaNome').value.trim();
+  const tel  = document.getElementById('ofertaTel').value.trim();
+  const antes = _ofertaPendente.nomeAntes || '';
+
+  const renome = document.getElementById('ofertaRenome');
+  const mudou  = !!nome && !!antes && normNome(nome) !== normNome(antes);
+  renome.innerHTML = mudou
+    ? _svgLapis + '<div>O job passa a guardar <b>"' + escHtml(nome) + '"</b>, no lugar de "' + escHtml(antes) + '" — assim o contato e o job ficam casados.</div>'
+    : '';
+  renome.classList.toggle('show', mudou);
+
+  // A existência é reconferida a CADA tecla: o nome corrigido pode ser de quem já está na
+  // agenda, e aí a conversa muda — casar em vez de criar repetido (05_QA.md, P-4).
+  const jaExiste = pessoaPorNome(nome);
+  const je = document.getElementById('ofertaJaExiste');
+  if (jaExiste) {
+    je.innerHTML = _svgInfo + '<div><b>' + escHtml(jaExiste.nome) + '</b> já está na sua agenda' +
+      (jaExiste.tel ? ', com o telefone <b>' + escHtml(jaExiste.tel) + '</b>' : ', mas <b>sem telefone</b>') +
+      '. Vou casar este job com ela, sem criar contato repetido.' +
+      (tel && !jaExiste.tel ? ' O telefone digitado aqui <b>não</b> será guardado — complete em Contatos.' : '') + '</div>';
+    je.classList.add('show');
+  } else {
+    je.classList.remove('show'); je.innerHTML = '';
+  }
+
+  document.getElementById('ofertaSemTel').classList.toggle('show', !tel && !jaExiste);
+  document.getElementById('ofertaTel').classList.toggle('warn', !tel && !jaExiste);
+
+  const etq = document.getElementById('ofertaEtiqueta');
+  etq.innerHTML = _svgInfo + '<div>Vai entrar em Contatos como <b>' + escHtml(etiquetaDoTipo(_ofertaPendente.tipo)) + '</b>.</div>';
+  etq.classList.add('show');
+
+  const btn = document.getElementById('ofertaBtnOk');
+  btn.innerHTML = _svgUserPlus + (jaExiste ? 'Usar este contato' : (tel ? 'Guardar contato' : 'Guardar mesmo assim'));
+}
+
+// Recusar continua sendo direito do Alex; o que acaba é o descarte calado (R-17).
+function ofertaRecusar() {
+  if (_ofertaSalvando) return;
+  const tel = document.getElementById('ofertaTel').value.trim();
+  const aviso = document.getElementById('ofertaRecusaAviso');
+  if (tel && !aviso.classList.contains('show')) {
+    aviso.innerHTML = _svgAlerta + '<div>Se sair agora, o telefone <b>' + escHtml(tel) + '</b> que você digitou <b>não fica guardado</b> — e o botão de mandar as fotos continua apagado neste job. O job já está salvo de qualquer jeito.' +
+      '<div style="display:flex;gap:8px;margin-top:9px">' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="ofertaVoltar()">Voltar</button>' +
+      '<button type="button" class="btn btn-sm" onclick="ofertaSairSemGuardar()">Sair sem guardar</button></div></div>';
+    aviso.classList.add('show');
+    document.getElementById('ofertaAcoes').style.display = 'none';
+    return;
+  }
+  ofertaSairSemGuardar();
+}
+
+function ofertaVoltar() {
+  document.getElementById('ofertaRecusaAviso').classList.remove('show');
+  document.getElementById('ofertaAcoes').style.display = '';
+}
+
+function ofertaSairSemGuardar() {
+  const tinhaTel = !!document.getElementById('ofertaTel').value.trim();
+  fecharOferta();
+  if (tinhaTel) toast('⚠️ Contato não guardado — o telefone digitado não foi salvo');
+}
+
+function fecharOferta() {
+  document.getElementById('contatoOverlay').classList.remove('open');
+  document.getElementById('ofertaRecusaAviso').classList.remove('show');
+  document.getElementById('ofertaAcoes').style.display = '';
+  _ofertaPendente = null;
+}
+
+// O job precisa ficar com o MESMO nome do contato (R-8/R-16). O identificador é o capturado
+// no salvamento: quando esta janela abre, editId já foi zerado pelo closeModal.
+async function ofertaCasarJob(p, nome) {
+  if (normNome(nome) === normNome(p.nomeNoJob) && nome === p.nomeNoJob) return true;
+  const coluna = p.campo === 'corretor' ? 'corretor' : 'cliente_nome';
+  const { error } = await db().from('jobs')
+    .update({ [coluna]: nome, updated_at: new Date().toISOString() }).eq('id', p.jobId);
+  if (error) { toast('⚠️ Não consegui atualizar o nome no job: ' + error.message); return false; }
+  return true;
+}
+
+async function ofertaConfirmar() {
+  if (_ofertaSalvando || !_ofertaPendente) return;
+  const p    = _ofertaPendente;
+  const nome = document.getElementById('ofertaNome').value.trim();
+  const tel  = document.getElementById('ofertaTel').value.trim();
+  const erro = document.getElementById('ofertaErro');
+  const btnOk = document.getElementById('ofertaBtnOk');
+  const btnNao = document.getElementById('ofertaBtnNao');
+  if (!nome) {
+    erro.innerHTML = _svgAlerta + '<div>Escreva o nome da pessoa para poder guardar.</div>';
+    erro.classList.add('show');
+    document.getElementById('ofertaNome').classList.add('err');
+    return;
+  }
+  document.getElementById('ofertaNome').classList.remove('err');
+  erro.classList.remove('show');
+
+  _ofertaSalvando = true;
+  btnOk.disabled = true; btnNao.disabled = true;
+  btnOk.innerHTML = '<span class="of-spin"></span>Guardando...';
+
+  // Se o nome corrigido já é de alguém da agenda, ninguém novo é inserido: o job é casado
+  // com quem já está lá (05_QA.md, P-4). O nome gravado é o da agenda, não o digitado.
+  const jaExiste = pessoaPorNome(nome);
+  if (jaExiste) {
+    const okJob = await ofertaCasarJob(p, jaExiste.nome);
+    _ofertaSalvando = false;
+    btnOk.disabled = false; btnNao.disabled = false;
+    if (!okJob) { ofertaAtualizar(); return; }
+    fecharOferta();
+    await carregarJobs();
+    if (currentTab === 'jobs')   renderJobs();
+    if (currentTab === 'resumo') renderResumo();
+    toast('✅ ' + jaExiste.nome + ' já estava em Contatos — o job foi casado com ela' +
+      (tel && !jaExiste.tel ? '. O telefone digitado não foi guardado' : ''));
+    return;
+  }
+
+  const { data, error } = await db().from('pessoas')
+    .insert({ nome, tel: tel || null, tipos: [etiquetaDoTipo(p.tipo)], updated_at: new Date().toISOString() })
+    .select('id,nome,tel').single();
+
+  if (error) {
+    _ofertaSalvando = false;
+    btnOk.disabled = false; btnNao.disabled = false;
+    btnOk.innerHTML = _svgRefaz + 'Tentar de novo';
+    erro.innerHTML = _svgAlerta + '<div>Não consegui guardar o contato agora. <b>O job continua salvo</b> e o que você digitou está aqui. (' + escHtml(error.message) + ')</div>';
+    erro.classList.add('show');
+    return;
+  }
+  pessoasAll.push(data);
+
+  await ofertaCasarJob(p, data.nome);
+
+  _ofertaSalvando = false;
+  btnOk.disabled = false; btnNao.disabled = false;
+  fecharOferta();
+  await carregarJobs();
+  if (currentTab === 'jobs')   renderJobs();
+  if (currentTab === 'resumo') renderResumo();
+  toast(tel ? ('✅ ' + data.nome + ' agora está em Contatos')
+            : '⚠️ Contato guardado. Sem telefone, o envio por WhatsApp continua indisponível');
+}
+</script>
+</div><!-- /sb-main -->
+</body>
+</html>

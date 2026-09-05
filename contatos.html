@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contatos — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260729a">
+  <style>
+    /* ── Contatos ── */
+    .contacts-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .contacts-toolbar input {
+      max-width: 360px;
+    }
+
+    .contacts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+    }
+
+    .contact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .contact-card:hover {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+
+    .contact-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-weight: 600; font-size: 14px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .contact-details { font-size: 12px; color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .contact-types { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .type-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+
+    /* Modal tipo toggles */
+    .tipo-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      font-size: 13px;
+      user-select: none;
+    }
+    .tipo-toggle.on {
+      border-color: var(--accent);
+      background: var(--accent-pale);
+      color: var(--accent);
+    }
+    .tipo-toggle input { display: none; }
+
+    .tipos-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+    .modal-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .field-hint { font-size: 11px; color: var(--muted); margin-top: 4px; font-style: italic; }
+
+    /* ── Bloco condicional do Corretor (CRECI + Imobiliária) — mockup Rev 7.1 ── */
+    .cor-wrap { overflow: hidden; max-height: 0; opacity: 0; transition: max-height .25s ease, opacity .18s ease; margin-bottom: 0; }
+    .cor-wrap.open { max-height: 460px; opacity: 1; margin-bottom: 12px; overflow: visible; }
+    .cor-box { border: 1px solid var(--border); border-left: 2px solid var(--accent-line); border-radius: 0 8px 8px 0; padding: 12px 12px 2px; background: var(--surface2); }
+    [data-theme="light"] .cor-box { background: rgba(26,39,68,.03); }
+    .cor-box input { background: var(--surface); }
+    [data-theme="light"] .cor-box input { background: #fff; }
+
+    /* pílulas Imobiliária | Autônomo */
+    .seg-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .seg-pill { display: flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 12.5px; color: var(--muted); user-select: none; transition: .15s; }
+    .seg-pill svg { width: 14px; height: 14px; stroke: currentColor; }
+    .seg-pill.on { border-color: var(--accent); background: var(--accent-pale); color: var(--accent); }
+
+    /* autocomplete de imobiliária (escolha única, molde do de bairros) */
+    .imob-ac { position: relative; margin-top: 8px; }
+    .sug-list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-card); z-index: 50; overflow: hidden; display: none; background: var(--surface3); }
+    .sug-list.open { display: block; }
+    .sug-item { display: flex; align-items: center; gap: 9px; padding: 8px 11px; font-size: 13px; cursor: pointer; }
+    .sug-item:hover, .sug-item.hl { background: var(--accent-sel); }
+    .sug-item svg { width: 14px; height: 14px; stroke: var(--muted); flex-shrink: 0; }
+    .sug-item .sug-rede { margin-left: auto; font-size: 10.5px; color: var(--muted); }
+    .sug-item.sug-new { color: var(--accent); font-weight: 600; border-top: 1px solid var(--border); }
+    .sug-item.sug-new svg { stroke: var(--accent); }
+
+    /* chip da imobiliária escolhida */
+    .imob-chip { display: flex; align-items: center; gap: 8px; border: 1px solid var(--accent-line); background: var(--accent-sel); border-radius: 8px; padding: 7px 10px; font-size: 13px; margin-top: 8px; }
+    .imob-chip svg { width: 15px; height: 15px; stroke: var(--accent); flex-shrink: 0; }
+    .imob-chip .ic-nome { font-weight: 600; }
+    .imob-chip .ic-rede { font-size: 11px; color: var(--muted); }
+    .imob-chip .ic-x { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; }
+    .imob-chip .ic-x:hover { color: var(--text); }
+
+    /* nota "fica guardado" — informação, não erro */
+    .keep-note { display: none; align-items: flex-start; gap: 7px; font-size: 12px; line-height: 1.45; color: var(--muted); background: var(--surface2); border: 1px dashed var(--border); border-radius: 7px; padding: 7px 9px; margin-bottom: 12px; }
+    .keep-note.show { display: flex; animation: fieldErrIn .18s ease-out; }
+    .keep-note svg { width: 14px; height: 14px; stroke: var(--muted); flex-shrink: 0; margin-top: 1px; }
+    .keep-note b { color: var(--text); }
+
+    /* separador da seção Documentos */
+    .sec-label { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 16px 0 10px; }
+    .sec-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .sec-label svg { width: 13px; height: 13px; stroke: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260725a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Contatos</span>
+    <div class="sb-topbar-right">
+      <button class="btn btn-ghost btn-sm" id="btnMigrar" style="display:none" onclick="migrarDados()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Migrar dados do v1</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ Novo</button>
+      <!-- Clock and theme toggle moved to js/sidebar.js -->
+    </div>
+  </div>
+
+  <div class="page">
+
+  <div class="contacts-toolbar">
+    <input type="text" id="searchInput" placeholder="Buscar por nome, telefone ou empresa..." oninput="renderLista()">
+    <div id="filtroTipos" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+
+  <div id="conteudo">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+</div>
+
+<!-- ── Modal Contato ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:500px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modalTitulo">Novo Contato</div>
+      <button class="modal-close" onclick="fecharModal()">×</button>
+    </div>
+
+    <!-- Erro que não é de campo (falhou gravar): faixa no topo, com "Tentar de novo" -->
+    <div class="modal-error-bar" id="errTopo" role="alert"></div>
+
+    <div class="form-group">
+      <label>Nome *</label>
+      <input type="text" id="fNome" placeholder="Nome completo" oninput="limparErroNome()">
+      <div class="field-error" id="errNome" role="alert"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Telefone</label>
+        <input type="tel" id="fTel" placeholder="(11) 9 9999-9999">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="fEmail" placeholder="email@exemplo.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Empresa</label>
+      <input type="text" id="fEmpresa" placeholder="Nome da empresa">
+      <div class="field-hint" id="empresaHint" style="display:none">Para corretor, a imobiliária vai no bloco laranja abaixo — este campo é para outras empresas</div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:0">
+      <label>Tipos</label>
+      <div class="tipos-row">
+        <div class="tipo-toggle" id="tog-Comprador" onclick="toggleTipo('Comprador')">Comprador</div>
+        <div class="tipo-toggle" id="tog-Corretor" onclick="toggleTipo('Corretor')">Corretor</div>
+        <div class="tipo-toggle" id="tog-Anfitrião" onclick="toggleTipo('Anfitrião')">Anfitrião</div>
+        <div class="tipo-toggle" id="tog-Proprietário" onclick="toggleTipo('Proprietário')">Proprietário</div>
+      </div>
+    </div>
+
+    <!-- Bloco do Corretor: CRECI + Imobiliária/Autônomo. Aparece e some junto com o
+         toggle Corretor, sem recarregar. O papel do vínculo é sempre 'Corretor'. -->
+    <div class="cor-wrap" id="corWrap">
+      <div class="cor-box">
+        <div class="form-group">
+          <label>CRECI</label>
+          <input type="text" id="fCreci" placeholder="Ex.: 123456-F">
+          <div class="field-hint">Registro do corretor — este bloco aparece porque o tipo Corretor está marcado</div>
+        </div>
+        <div class="form-group">
+          <label>Imobiliária</label>
+          <div class="seg-row">
+            <div class="seg-pill" id="segImob" onclick="setVinculo('imob')">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              De imobiliária
+            </div>
+            <div class="seg-pill" id="segAuto" onclick="setVinculo('auto')">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Autônomo
+            </div>
+          </div>
+          <!-- autocomplete puxando do cadastro de Imobiliárias -->
+          <div class="imob-ac" id="imobAc" style="display:none">
+            <input type="text" id="fImob" placeholder="Buscar no cadastro de Imobiliárias..." autocomplete="off"
+                   oninput="imobFiltrar()" onkeydown="imobKey(event)" onblur="setTimeout(imobFecharSugs,150)">
+            <div class="sug-list" id="sugList"></div>
+          </div>
+          <!-- chip da imobiliária escolhida -->
+          <div class="imob-chip" id="imobChip" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <span class="ic-nome" id="chipNome"></span>
+            <span class="ic-rede" id="chipRede"></span>
+            <button class="ic-x" onclick="limparImob()" title="Trocar imobiliária">×</button>
+          </div>
+          <div class="field-hint" id="vincHint">Opcional — pode ficar em branco se você ainda não sabe</div>
+          <!-- aviso âmbar: corretor sem imobiliária e sem "Autônomo". Avisa, não bloqueia. -->
+          <div class="field-warn" id="warnVinc" role="alert"></div>
+          <!-- caso raro: a pessoa tem vínculo de corretor com mais de uma imobiliária -->
+          <div class="field-hint" id="vincOutros" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <!-- ao desmarcar Corretor com dados preenchidos: nada é apagado -->
+    <div class="keep-note" id="corKeep">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span id="corKeepTxt"></span>
+    </div>
+
+    <!-- Documentos: RG e CPF, sempre visíveis, para qualquer pessoa -->
+    <div class="sec-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h4"/><path d="M15 12h4"/><path d="M5 16c.6-1.4 2-2 4-2s3.4.6 4 2"/></svg>Documentos</div>
+    <div class="form-row cols-2" style="margin-bottom:0">
+      <div class="form-group">
+        <label>RG</label>
+        <input type="text" id="fRg" placeholder="Ex.: 12.345.678-9">
+      </div>
+      <div class="form-group">
+        <label>CPF</label>
+        <input type="text" id="fCpf" placeholder="000.000.000-00" inputmode="numeric">
+        <div class="field-warn" id="warnCpf" role="alert"></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Observações</label>
+      <textarea id="fObs" rows="3" placeholder="Notas sobre o contato..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnDel" onclick="excluirContato()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnSalvar" onclick="salvarContato()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script src="js/masks.js?v=20260729a"></script>
+<script src="js/campos.js?v=20260729a"></script>
+<script src="js/pessoas.js?v=20260729a"></script>
+<script>
+// ── Estado ──────────────────────────────────────────────────────────────────
+let contatos = [];
+let editId = null;
+let tiposAtivos = new Set();
+let filtroAtivo = null;
+let salvando = false;          // guarda anti-duplo-clique do Salvar
+
+// Etapa 2 — cadastro de Imobiliárias e vínculos (imobiliaria_pessoas)
+let imobs = [];                // cadastro de imobiliárias (fonte do autocomplete)
+let imobPessoas = [];          // vínculos pessoa ↔ imobiliária
+// Estado do bloco do corretor dentro do modal:
+//   vinculo    → null (em branco) · 'auto' (autônomo) · objeto da imobiliária
+//   vinculoId  → id da LINHA de vínculo carregada ao abrir a ficha; é só sobre ela
+//                que o salvar age, para nunca apagar em silêncio vínculo criado na
+//                ficha da Imobiliária (ADR D-17)
+let vinculo = null, vinculoId = null, vinculoOrigImobId = null;
+let vinculoSegAberto = false, vincHl = -1, guardado = null, _criandoImob = false;
+
+const TIPO_CORES = {
+  'Comprador':    '#3b82f6',
+  'Corretor':     '#f59e0b',
+  'Anfitrião':    '#22c55e',
+  'Proprietário': '#8b5cf6'
+};
+const TODOS_TIPOS = Object.keys(TIPO_CORES);
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+const TOAST_ICO = {
+  '✅':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>',
+  '❌':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  '⚠️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  '🗑️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7a7d82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>'
+};
+TOAST_ICO['⚠'] = TOAST_ICO['⚠️']; TOAST_ICO['🗑'] = TOAST_ICO['🗑️'];
+function toast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  let icon = '', text = String(msg == null ? '' : msg);
+  for (const k in TOAST_ICO) { if (text.indexOf(k) === 0) { icon = TOAST_ICO[k]; text = text.slice(k.length).trim(); break; } }
+  t.innerHTML = icon + '<span style="vertical-align:middle">' + text.replace(/</g,'&lt;') + '</span>';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+async function init() {
+  await initSupabase();
+  await carregarContatos();
+  await carregarImobiliarias();
+  verificarMigracao();
+  renderFiltros();
+  // Deep-link: abrir a ficha de uma pessoa direto (?abrir=ID) — usado pelas Tarefas
+  const abrir = new URLSearchParams(location.search).get('abrir');
+  if (abrir && contatos.some(c => c.id === abrir)) openModal(abrir);
+}
+
+// ── Carregar ─────────────────────────────────────────────────────────────────
+async function carregarContatos() {
+  const { data, error } = await db().from('pessoas').select('*').order('nome');
+  if (error) {
+    document.getElementById('conteudo').innerHTML =
+      `<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><p>Erro ao carregar: ${error.message}</p></div>`;
+    return;
+  }
+  contatos = data || [];
+  renderLista();
+}
+
+// Cadastro de imobiliárias + vínculos: duas consultas leves, usadas pelo bloco do
+// corretor (autocomplete) e pelo card da lista (imobiliária na linha cinza).
+async function carregarImobiliarias() {
+  const [ri, rv] = await Promise.all([
+    db().from('imobiliarias').select('id,nome,rede').order('nome'),
+    db().from('imobiliaria_pessoas').select('id,imobiliaria_id,pessoa_id,papel,created_at')
+  ]);
+  if (ri.error || rv.error) {
+    // não derruba a tela: sem o cadastro, o bloco do corretor só perde o autocomplete
+    toast('⚠️ Não deu para carregar as imobiliárias: ' + ((ri.error || rv.error).message));
+    return;
+  }
+  imobs = ri.data || [];
+  imobPessoas = rv.data || [];
+  renderLista();
+}
+
+function imobById(id) { return imobs.find(i => i.id === id); }
+// Nome da imobiliária que aparece no card (a mais recente, se houver mais de uma).
+// Só aparece ENQUANTO a pessoa for Corretor (pedido do Alex, 02/08): ao desmarcar o
+// tipo, o vínculo continua guardado no banco (e volta se ele remarcar), mas a lista
+// deixa de afirmar uma coisa que não é mais verdade — senão o card mostraria a
+// imobiliária de quem não é mais corretor ali.
+function nomeImobDaPessoa(c) {
+  if (!c || !(c.tipos || []).includes('Corretor')) return null;
+  const v = vinculosCorretor(c.id)[0];
+  return v ? ((imobById(v.imobiliaria_id) || {}).nome || null) : null;
+}
+// Vínculos de papel 'Corretor' de uma pessoa, do mais novo para o mais antigo
+function vinculosCorretor(pessoaId) {
+  return imobPessoas
+    .filter(v => v.pessoa_id === pessoaId && (v.papel || '') === 'Corretor')
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+}
+
+// ── Render lista ─────────────────────────────────────────────────────────────
+function renderLista() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  let lista = contatos;
+
+  if (q) {
+    lista = lista.filter(c =>
+      (c.nome || '').toLowerCase().includes(q) ||
+      (c.tel || '').includes(q) ||
+      (c.email || '').toLowerCase().includes(q) ||
+      (c.empresa || '').toLowerCase().includes(q) ||
+      // a imobiliária vinculada aparece no card, então também precisa ser encontrável
+      (nomeImobDaPessoa(c) || '').toLowerCase().includes(q)
+    );
+  }
+  if (filtroAtivo) {
+    lista = lista.filter(c => (c.tipos || []).includes(filtroAtivo));
+  }
+
+  const el = document.getElementById('conteudo');
+
+  if (!lista.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <p class="empty-state-title">${q || filtroAtivo ? 'Nenhum contato encontrado.' : 'Nenhum contato ainda.'}</p>
+      ${!q && !filtroAtivo ? '<p>Clique em "+ Novo" para começar.</p>' : ''}
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="contacts-grid">${lista.map(cardHTML).join('')}</div>`;
+}
+
+function cardHTML(c) {
+  const inicial = (c.nome || '?')[0].toUpperCase();
+  // Card limpo (decisão do Alex): nenhum documento aparece aqui — RG, CPF e CRECI
+  // ficam só dentro da ficha. A imobiliária vinculada entra na linha cinza, no
+  // lugar onde a Empresa sempre apareceu (imobiliária é contato, não documento).
+  const detalhes = [c.tel, c.email, nomeImobDaPessoa(c) || c.empresa].filter(Boolean).join(' · ');
+  const badges = (c.tipos || []).map(t => {
+    const cor = TIPO_CORES[t] || 'var(--muted)';
+    return `<span class="type-badge" style="color:${cor};border-color:${cor}">${t}</span>`;
+  }).join('');
+  // nome/detalhes vêm do que o Alex digitou → sempre escapados (esc de js/campos.js)
+  return `<div class="contact-card" onclick="openModal('${c.id}')">
+    <div class="contact-avatar">${esc(inicial)}</div>
+    <div class="contact-info">
+      <div class="contact-name">${esc(c.nome)}</div>
+      ${detalhes ? `<div class="contact-details">${esc(detalhes)}</div>` : ''}
+      ${badges ? `<div class="contact-types">${badges}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Filtros por tipo ──────────────────────────────────────────────────────────
+function renderFiltros() {
+  const el = document.getElementById('filtroTipos');
+  el.innerHTML = TODOS_TIPOS.map(t => {
+    const cor = TIPO_CORES[t];
+    const on = filtroAtivo === t;
+    return `<button onclick="setFiltro('${t}')" style="
+      font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;cursor:pointer;
+      border:1px solid ${on ? cor : 'var(--border)'};
+      background:${on ? `rgba(${hexToRgb(cor)},.15)` : 'var(--surface2)'};
+      color:${on ? cor : 'var(--muted)'};
+      transition:.15s">${t}</button>`;
+  }).join('');
+}
+
+function setFiltro(tipo) {
+  filtroAtivo = filtroAtivo === tipo ? null : tipo;
+  renderFiltros();
+  renderLista();
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+// ── Avisos do modal (padrão da seção C: aviso junto do campo) ────────────────
+function limparErroNome() { fieldErrLimpar('fNome', 'errNome'); }
+function errTopoMostrar(msg, tentarDeNovo) {
+  const bar = document.getElementById('errTopo');
+  if (!bar) { toast('❌ ' + msg); return; }
+  bar.innerHTML = AlexCampos.ICO_ERR;
+  const sp = document.createElement('span');
+  sp.appendChild(document.createTextNode(msg + ' '));
+  if (tentarDeNovo !== false) sp.appendChild(feLink('Tentar de novo', () => { errTopoLimpar(); salvarContato(); }));
+  bar.appendChild(sp);
+  bar.classList.add('show');
+  if (bar.scrollIntoView) bar.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function errTopoLimpar() { const b = document.getElementById('errTopo'); if (b) { b.classList.remove('show'); b.innerHTML = ''; } }
+
+// ── Bloco do corretor: CRECI + Imobiliária | Autônomo ────────────────────────
+function ehCorretor() { return tiposAtivos.has('Corretor'); }
+
+function refreshCorretor() {
+  const on = ehCorretor();
+  document.getElementById('corWrap').classList.toggle('open', on);
+  document.getElementById('empresaHint').style.display = on ? '' : 'none';
+  const keep = document.getElementById('corKeep');
+  if (on) {
+    // voltou a ser corretor: o que estava guardado reaparece
+    if (guardado) {
+      const inp = document.getElementById('fCreci');
+      if (guardado.creci && !inp.value) inp.value = guardado.creci;
+      if (guardado.vinculo && !vinculo) vinculo = guardado.vinculo;
+      guardado = null;
+    }
+    keep.classList.remove('show');
+    renderVinculo();
+  } else {
+    // Controle explícito, sem ação escondida: o bloco some, o dado NÃO é apagado
+    // (o CRECI segue no payload e o vínculo não é tocado no salvar).
+    const creci = document.getElementById('fCreci').value.trim();
+    if (creci || vinculo) {
+      guardado = { creci, vinculo };
+      const txt = document.getElementById('corKeepTxt');
+      txt.innerHTML = '';
+      const partes = [];
+      if (creci)                 partes.push(['o CRECI ', creci]);
+      if (vinculo === 'auto')    partes.push(['a marcação de ', 'autônomo']);
+      else if (vinculo)          partes.push(['o vínculo com a ', vinculo.nome]);
+      partes.forEach((p, i) => {
+        if (i) txt.appendChild(document.createTextNode(' e '));
+        txt.appendChild(document.createTextNode(p[0]));
+        const b = document.createElement('b'); b.textContent = p[1];   // nunca vira HTML
+        txt.appendChild(b);
+      });
+      txt.appendChild(document.createTextNode(
+        (partes.length > 1 ? ' ficam guardados' : ' fica guardado') +
+        ' — voltam a aparecer se você marcar Corretor de novo.'));
+      keep.classList.add('show');
+    } else keep.classList.remove('show');
+    fieldWarnLimpar('fImob', 'warnVinc');
+    imobFecharSugs();
+  }
+}
+
+function renderVinculo() {
+  const isAuto = vinculo === 'auto';
+  const isImob = !!(vinculo && vinculo !== 'auto');
+  document.getElementById('segImob').classList.toggle('on', isImob || (vinculoSegAberto && !isAuto));
+  document.getElementById('segAuto').classList.toggle('on', isAuto);
+  document.getElementById('imobAc').style.display = (!isImob && !isAuto && vinculoSegAberto) ? '' : 'none';
+  document.getElementById('imobChip').style.display = isImob ? '' : 'none';
+  if (isImob) {
+    document.getElementById('chipNome').textContent = vinculo.nome || '';
+    document.getElementById('chipRede').textContent = vinculo.rede ? '· rede ' + vinculo.rede : '· independente';
+  }
+  document.getElementById('vincHint').style.display = (isImob || isAuto) ? 'none' : '';
+  if (isImob || isAuto) fieldWarnLimpar('fImob', 'warnVinc');
+  if (!vinculoSegAberto) imobFecharSugs();
+}
+
+function setVinculo(qual) {
+  if (qual === 'auto') {
+    vinculo = (vinculo === 'auto') ? null : 'auto';   // clicar de novo desfaz
+    vinculoSegAberto = false;
+  } else if (!(vinculo && vinculo !== 'auto')) {      // com chip escolhido, nada muda
+    vinculoSegAberto = !vinculoSegAberto;
+    vinculo = null;
+    if (vinculoSegAberto) setTimeout(() => document.getElementById('fImob').focus(), 80);
+  }
+  renderVinculo();
+  // só avisa quando ele fecha o bloco sem escolher nada — enquanto a busca está
+  // aberta, ele ainda está no meio da escolha e o aviso seria importuno
+  if (!vinculo && !vinculoSegAberto) avisarVinculoVazio();
+  else fieldWarnLimpar('fImob', 'warnVinc');
+}
+
+function limparImob() {
+  vinculo = null; vinculoSegAberto = true;
+  document.getElementById('fImob').value = '';
+  renderVinculo();
+  setTimeout(() => document.getElementById('fImob').focus(), 50);
+}
+
+// Aviso âmbar (não bloqueia — decisão do Alex): corretor sem imobiliária e sem
+// "Autônomo" marcado. Some assim que ele escolher qualquer um dos dois.
+function avisarVinculoVazio() {
+  if (!ehCorretor() || vinculo) { fieldWarnLimpar('fImob', 'warnVinc'); return false; }
+  fieldWarnMostrar('fImob', 'warnVinc',
+    ['Corretor sem imobiliária e sem "Autônomo" marcado. Dá para salvar assim, mas depois você não vai saber qual dos dois é.']);
+  return true;
+}
+
+// ── Autocomplete de imobiliária (escolha única, molde do de bairros) ─────────
+// Cada sugestão é um elemento de verdade e a ação vai por addEventListener, com o
+// nome preso na closure: "O'Brien Imóveis" funciona e nada do que for digitado é
+// executado como comando (lição do defeito D-1).
+const ICO_PREDIO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>';
+const ICO_MAIS   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
+function imobFecharSugs() {
+  const d = document.getElementById('sugList');
+  if (d) { d.classList.remove('open'); d.innerHTML = ''; }
+  vincHl = -1;
+}
+
+function imobFiltrar() {
+  const raw = document.getElementById('fImob').value;
+  const q = normTxt(raw);
+  const list = document.getElementById('sugList');
+  list.innerHTML = ''; vincHl = -1;
+  if (!q) { imobFecharSugs(); return; }
+
+  const item = (classe, ico, texto, detalhe, acao) => {
+    const it = document.createElement('div');
+    it.className = 'sug-item' + (classe ? ' ' + classe : '');
+    it.innerHTML = ico;
+    const sp = document.createElement('span'); sp.textContent = texto;   // texto digitado nunca vira HTML
+    it.appendChild(sp);
+    if (detalhe) { const d = document.createElement('span'); d.className = 'sug-rede'; d.textContent = detalhe; it.appendChild(d); }
+    it.addEventListener('mousedown', acao);
+    list.appendChild(it);
+    return it;
+  };
+
+  const achadas = imobs.filter(i => normTxt(i.nome).includes(q) || (i.rede && normTxt(i.rede).includes(q))).slice(0, 7);
+  achadas.forEach(i => item('', ICO_PREDIO, i.nome, i.rede || 'independente', () => escolherImob(i.id)));
+
+  const nome = raw.trim();
+  if (nome && !imobs.some(i => normTxt(i.nome) === q)) {
+    item('sug-new', ICO_MAIS, 'Criar "' + nome + '" no cadastro de Imobiliárias', '', () => criarImobInline(nome));
+  }
+  list.classList.toggle('open', list.childElementCount > 0);
+}
+
+function imobKey(e) {
+  const items = [...document.getElementById('sugList').querySelectorAll('.sug-item')];
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const alvo = (vincHl >= 0 && items[vincHl]) ? items[vincHl] : items[0];
+    if (alvo) alvo.dispatchEvent(new Event('mousedown'));
+  } else if (e.key === 'ArrowDown') { e.preventDefault(); vincHl = Math.min(vincHl + 1, items.length - 1); imobHl(items); }
+  else if (e.key === 'ArrowUp')     { e.preventDefault(); vincHl = Math.max(vincHl - 1, 0); imobHl(items); }
+  else if (e.key === 'Escape')      { imobFecharSugs(); }
+}
+function imobHl(items) { items.forEach((it, i) => it.classList.toggle('hl', i === vincHl)); }
+
+function escolherImob(id) {
+  const i = imobById(id);
+  if (!i) return;
+  vinculo = i;
+  vinculoSegAberto = false;
+  document.getElementById('fImob').value = '';
+  renderVinculo();
+}
+
+// "Criar no cadastro": grava um registro REAL (só o nome) na hora — mesmo padrão do
+// "＋ novo bairro". Se o nome já existir, seleciona o que existe em vez de duplicar.
+async function criarImobInline(nome) {
+  nome = (nome || '').trim();
+  if (!nome || _criandoImob) return;
+  const jaExiste = imobs.find(i => normTxt(i.nome) === normTxt(nome));
+  if (jaExiste) { escolherImob(jaExiste.id); return; }
+  _criandoImob = true;
+  try {
+    const { data, error } = await db().from('imobiliarias')
+      .insert({ nome, origem: 'manual' }).select('id,nome,rede').single();
+    if (error) { toast('❌ ' + error.message); return; }
+    imobs.push(data);
+    imobs.sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+    escolherImob(data.id);
+    toast('✅ Imobiliária "' + nome + '" criada no cadastro');
+  } finally { _criandoImob = false; }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  editId = id || null;
+  const c = id ? contatos.find(x => x.id === id) : null;
+  document.getElementById('modalTitulo').textContent = c ? 'Editar Contato' : 'Novo Contato';
+  document.getElementById('fNome').value    = c?.nome    || '';
+  document.getElementById('fTel').value     = c?.tel     || '';
+  document.getElementById('fEmail').value   = c?.email   || '';
+  document.getElementById('fEmpresa').value = c?.empresa || '';
+  document.getElementById('fObs').value     = c?.obs     || '';
+  document.getElementById('fRg').value      = c?.rg      || '';
+  document.getElementById('fCpf').value     = c?.cpf     || '';
+  document.getElementById('fCreci').value   = c?.creci   || '';
+  document.getElementById('fImob').value    = '';
+  tiposAtivos = new Set(c?.tipos || []);
+  TODOS_TIPOS.forEach(t => {
+    document.getElementById('tog-' + t).classList.toggle('on', tiposAtivos.has(t));
+  });
+
+  // Vínculo de corretor: a tela mostra UM (o mais recente) e é só nele que mexe.
+  const vincs = c ? vinculosCorretor(c.id) : [];
+  const v0 = vincs[0];
+  vinculoId = v0 ? v0.id : null;
+  vinculoOrigImobId = v0 ? v0.imobiliaria_id : null;
+  vinculo = v0 ? (imobById(v0.imobiliaria_id) || { id: v0.imobiliaria_id, nome: '(imobiliária removida)', rede: '' })
+               : (c && c.corretor_autonomo ? 'auto' : null);
+  vinculoSegAberto = false;
+  guardado = null;
+  const outros = document.getElementById('vincOutros');
+  if (vincs.length > 1) {
+    outros.textContent = 'Esta pessoa também é corretora em outra' + (vincs.length > 2 ? 's ' + (vincs.length - 1) + ' imobiliárias' : ' imobiliária') +
+      ' — esses vínculos não são mexidos aqui; gerencie pela ficha da imobiliária.';
+    outros.style.display = '';
+  } else { outros.textContent = ''; outros.style.display = 'none'; }
+
+  errTopoLimpar(); limparErroNome();
+  fieldWarnLimpar('fCpf', 'warnCpf'); fieldWarnLimpar('fImob', 'warnVinc');
+  document.getElementById('corKeep').classList.remove('show');
+  imobFecharSugs();
+  refreshCorretor();
+
+  document.getElementById('btnDel').style.display = c ? '' : 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => {
+    document.getElementById('fNome').focus();
+    AlexMasks.applyMasks(document.getElementById('modalOverlay'));
+  }, 50);
+}
+
+function fecharModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editId = null;
+  tiposAtivos = new Set();
+  vinculo = null; vinculoId = null; vinculoOrigImobId = null;
+  vinculoSegAberto = false; guardado = null;
+  imobFecharSugs();
+}
+
+function toggleTipo(t) {
+  if (tiposAtivos.has(t)) tiposAtivos.delete(t); else tiposAtivos.add(t);
+  document.getElementById('tog-' + t).classList.toggle('on', tiposAtivos.has(t));
+  if (t === 'Corretor') refreshCorretor();
+}
+
+// Aviso âmbar de CPF pela metade (1 a 10 números): avisa ao sair do campo e deixa
+// salvar. Não é validação de dígito — é só pegar erro de digitação óbvio.
+function cpfConferir() {
+  const el = document.getElementById('fCpf');
+  const d = (el.value || '').replace(/\D/g, '');
+  if (d.length > 0 && d.length < 11) {
+    fieldWarnMostrar('fCpf', 'warnCpf', ['CPF incompleto — um CPF tem 11 números. Dá para salvar assim, mas confira depois.']);
+    return true;
+  }
+  fieldWarnLimpar('fCpf', 'warnCpf');
+  return false;
+}
+document.getElementById('fCpf').addEventListener('blur', cpfConferir);
+document.getElementById('fCpf').addEventListener('input', () => fieldWarnLimpar('fCpf', 'warnCpf'));
+
+// ── CRUD ──────────────────────────────────────────────────────────────────────
+// A regra de gravação do vínculo (por diferença, só na linha carregada — D-17)
+// mora em js/pessoas.js, para a ficha de Lead da Etapa 3 usar a MESMA regra.
+async function salvarContato() {
+  if (salvando) return;                        // guarda anti-duplo-clique
+  errTopoLimpar(); limparErroNome();
+  const nome = document.getElementById('fNome').value.trim();
+  if (!nome) {
+    fieldErrMostrar('fNome', 'errNome', ['Escreva o nome da pessoa para poder salvar.']);
+    return;
+  }
+  cpfConferir();                               // aviso âmbar; não impede salvar
+  const semVinculo = avisarVinculoVazio();     // idem
+
+  salvando = true;
+  const btn = document.getElementById('btnSalvar'); if (btn) btn.style.opacity = '.6';
+  try {
+    const corretor = ehCorretor();
+    const payload = {
+      nome,
+      tel:     document.getElementById('fTel').value.trim()     || null,
+      email:   document.getElementById('fEmail').value.trim()   || null,
+      empresa: document.getElementById('fEmpresa').value.trim() || null,
+      obs:     document.getElementById('fObs').value.trim()     || null,
+      rg:      document.getElementById('fRg').value.trim()      || null,
+      cpf:     document.getElementById('fCpf').value.trim()     || null,
+      // o CRECI vai no payload mesmo com o bloco escondido: o dado fica guardado
+      creci:   document.getElementById('fCreci').value.trim()   || null,
+      tipos:   [...tiposAtivos],
+      updated_at: new Date().toISOString()
+    };
+    // "Autônomo" só é escrito quando o tipo Corretor está marcado — com ele
+    // desmarcado, nada do bloco do corretor é alterado (D-16/D-17).
+    if (corretor) payload.corretor_autonomo = (vinculo === 'auto');
+
+    // 1) grava a pessoa
+    let pessoaId = editId, error;
+    if (editId) {
+      ({ error } = await db().from('pessoas').update(payload).eq('id', editId));
+    } else {
+      const r = await db().from('pessoas').insert(payload).select('id').single();
+      error = r.error; pessoaId = r.data?.id;
+    }
+    if (error || !pessoaId) { errTopoMostrar('Não deu para salvar agora — ' + ((error && error.message) || 'erro ao salvar') + '.'); return; }
+
+    // 2) grava o vínculo. Se falhar, a pessoa FICA salva e o erro aparece — sem
+    //    fingir sucesso (ordem definida em 02_ARQUITETURA 14.2).
+    const rv = await salvarVinculoCorretor(pessoaId, {
+      ehCorretor: corretor, vinculo, vinculoId, vinculoOrigImobId
+    });
+    if (!rv.ok) {
+      await carregarContatos(); await carregarImobiliarias();
+      errTopoMostrar('A pessoa foi salva, mas o vínculo com a imobiliária não — ' + (rv.error?.message || 'erro') + '.');
+      return;
+    }
+
+    toast((editId ? '✅ Contato atualizado' : '✅ Contato criado') +
+          (corretor && semVinculo ? ' — corretor ainda sem imobiliária' : ''));
+    fecharModal();
+    await carregarContatos();
+    await carregarImobiliarias();
+  } finally {
+    salvando = false;
+    const b = document.getElementById('btnSalvar'); if (b) b.style.opacity = '1';
+  }
+}
+
+async function excluirContato() {
+  if (!editId) return;
+  const temVinculo = vinculosCorretor(editId).length > 0;
+  if (!confirm('Excluir este contato?' + (temVinculo
+      ? '\n\nO vínculo dele com a imobiliária também sai — a imobiliária NÃO é apagada.' : ''))) return;
+  const { error } = await db().from('pessoas').delete().eq('id', editId);
+  if (error) { toast('❌ Erro: ' + error.message); return; }
+  toast('🗑️ Contato excluído');
+  fecharModal();
+  await carregarContatos();
+  await carregarImobiliarias();
+}
+
+// ── Migração v1 → v2 ─────────────────────────────────────────────────────────
+function verificarMigracao() {
+  try {
+    const raw = localStorage.getItem('aos_contacts');
+    if (!raw) return;
+    const dados = JSON.parse(raw);
+    if (Array.isArray(dados) && dados.length > 0 && contatos.length === 0) {
+      document.getElementById('btnMigrar').style.display = '';
+    }
+  } catch (e) { /* sem dados */ }
+}
+
+async function migrarDados() {
+  let dados;
+  try {
+    dados = JSON.parse(localStorage.getItem('aos_contacts') || '[]');
+  } catch (e) { toast('❌ Erro ao ler dados do v1'); return; }
+
+  if (!dados.length) { toast('Nenhum dado para migrar'); return; }
+  if (!confirm(`Migrar ${dados.length} contato(s) do v1 para o banco?`)) return;
+
+  const registros = dados.map(c => ({
+    nome:    c.nome    || '(sem nome)',
+    tel:     c.tel     || null,
+    email:   c.email   || null,
+    empresa: c.empresa || null,
+    tipos:   Array.isArray(c.tipos) ? c.tipos : [],
+    obs:     null
+  }));
+
+  const { error } = await db().from('pessoas').insert(registros);
+  if (error) { toast('❌ Erro na migração: ' + error.message); return; }
+
+  toast(`✅ ${registros.length} contato(s) migrado(s)!`);
+  document.getElementById('btnMigrar').style.display = 'none';
+  await carregarContatos();
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+init().catch(e => {
+  document.getElementById('conteudo').innerHTML =
+    `<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><p>Falha ao conectar: ${e.message}</p></div>`;
+});
+
+(function() {
+  const SB_KEY = 'aos_sidebar_collapsed';
+  const sb = document.getElementById('sidebar');
+  function setSidebar(c) { sb.classList.toggle('collapsed', c); localStorage.setItem(SB_KEY, c ? '1' : '0'); }
+  setSidebar(localStorage.getItem(SB_KEY) !== '0');
+  document.getElementById('sbToggle').addEventListener('click', () => setSidebar(!sb.classList.contains('collapsed')));
+  // clock and theme handlers moved to js/sidebar.js
+})();
+</script>
+</div><!-- /sb-main -->
+</body>
+</html>

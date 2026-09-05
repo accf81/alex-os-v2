@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Due Diligence automática — o plano e os números · Samuel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0e0f12; --surface:#16181d; --surface2:#1c1f25; --surface3:#23272e;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --text:#eef0f3; --muted:#8a9099;
+  --accent:#ff6600; --accent-light:#ff8533; --accent-pale:rgba(255,102,0,.10); --accent-line:rgba(255,102,0,.32);
+  --success:#22c55e; --success-pale:rgba(34,197,94,.12); --success-line:rgba(34,197,94,.3);
+  --warn:#eab308; --warn-pale:rgba(234,179,8,.12); --warn-line:rgba(234,179,8,.3);
+  --info:#3b82f6; --info-pale:rgba(59,130,246,.12); --info-line:rgba(59,130,246,.3);
+  --danger:#ef4444; --danger-pale:rgba(239,68,68,.12); --danger-line:rgba(239,68,68,.3);
+  --muteb:#6b7280; --mute-pale:rgba(138,144,153,.12);
+  --radius:10px; --radius-sm:6px; --radius-lg:12px;
+  --font:'Montserrat',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;padding:26px 34px 70px}
+svg.i{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:14px;height:14px}
+
+.hero{border:1px solid var(--border);background:linear-gradient(180deg,var(--surface2),var(--surface));border-radius:var(--radius-lg);padding:24px 28px;margin-bottom:16px}
+.hero .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.02em}
+.hero .who{color:var(--muted);font-size:13px;font-weight:600;margin-top:5px}
+.datebadge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700}
+.momento{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-size:14px}
+.momento b{color:var(--accent-light)}
+
+.quem{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:22px;font-size:13.5px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.quem .lb{color:var(--muted);font-weight:600}
+.quem button{background:var(--surface3);border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.quem button:hover{border-color:var(--accent-line);color:var(--text)}
+.quem button.on{background:var(--accent-pale);border-color:var(--accent);color:var(--accent-light)}
+.quem .dica{color:var(--muted);font-size:12.5px;margin-left:auto}
+
+.sechead{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 13px}
+.sechead svg{color:var(--accent-light)}
+
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+.cols4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:stretch}
+.card{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-lg);padding:20px 22px;display:flex;flex-direction:column;height:100%}
+.card h3{font-size:15px;font-weight:800;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.card .cs{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+.card .corpo{flex:1}
+
+.kpi{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:17px 19px}
+.kpi .v{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.kpi .l{font-size:12.5px;color:var(--muted);margin-top:3px}
+.kpi.red .v{color:var(--danger)} .kpi.red{border-color:var(--danger-line)}
+.kpi.green .v{color:var(--success)} .kpi.green{border-color:var(--success-line)}
+.kpi.or .v{color:var(--accent-light)}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border2)}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.money{font-weight:700;white-space:nowrap}
+td.hoje{color:var(--danger)}
+td.novo{color:var(--success)}
+.tagx{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.t-ok{background:var(--success-pale);color:var(--success)}
+.t-and{background:var(--info-pale);color:var(--info)}
+.t-next{background:var(--mute-pale);color:var(--muteb)}
+
+.destaque{background:var(--accent-pale);border:1px solid var(--accent-line);border-radius:var(--radius-sm);padding:14px 16px;font-size:13.5px;margin-top:14px}
+.alerta{background:var(--danger-pale);border:1px solid var(--danger-line);border-radius:var(--radius-sm);padding:14px 16px;font-size:13.5px;margin-top:14px}
+
+.dec{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px}
+.dec .num{font-size:11px;font-weight:800;color:var(--accent-light);letter-spacing:.05em}
+.dec .txt{font-size:14.5px;margin-top:6px;font-weight:600}
+.dec .pq{color:var(--muted);font-size:12.5px;margin-top:7px}
+
+ul.lista{list-style:none;display:flex;flex-direction:column;gap:9px}
+ul.lista li{position:relative;padding-left:19px;font-size:13.5px}
+ul.lista li::before{content:'';position:absolute;left:1px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--muteb)}
+ul.lista.g li::before{background:var(--success)}
+ul.lista.y li::before{background:var(--warn)}
+.mini{color:var(--muted);font-size:12px;margin-top:4px;display:block}
+
+.fase{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;flex-direction:column;height:100%}
+.fase .n{font-size:11px;font-weight:800;color:var(--accent-light);letter-spacing:.05em}
+.fase .t{font-size:14px;font-weight:700;margin-top:4px}
+.fase .d{color:var(--muted);font-size:12.5px;margin-top:7px;flex:1}
+.fase .g{margin-top:10px;font-size:11.5px;font-weight:700;color:var(--success)}
+
+.fb{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border2)}
+.fb-q{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}
+.fb-txt{width:100%;min-height:58px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:13.5px;padding:10px 12px;resize:vertical}
+.fb-txt:focus{outline:none;border-color:var(--accent-line)}
+.fb-txt::placeholder{color:var(--muteb)}
+.fb-send{margin-top:8px;background:var(--accent-pale);border:1px solid var(--accent-line);color:var(--accent-light);border-radius:var(--radius-sm);padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s}
+.fb-send:hover{background:rgba(255,102,0,.18);border-color:var(--accent)}
+.fb-send:disabled{opacity:.6;cursor:default}
+.fb-done{display:none;align-items:center;gap:8px;color:var(--success);font-size:13px;font-weight:700}
+
+.foot{margin-top:34px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+@media(max-width:1200px){.cols2,.cols3,.cols4{grid-template-columns:1fr}}
+
+@media(max-width:820px){
+  .wrap{padding:16px 14px 54px}
+  .hero{padding:18px 16px;margin-bottom:12px}
+  .hero h1{font-size:20px;line-height:1.25}
+  .hero .top{gap:10px}
+  .datebadge{padding:6px 12px;font-size:12px}
+  .quem{position:static;padding:10px 12px;gap:8px}
+  .quem .dica{margin-left:0;width:100%;font-size:11.5px}
+  .card,.perg,.dec,.caso,.fase,.ask-box,.regra{padding:15px 14px}
+  .kpi{padding:14px 15px}
+  .kpi .v{font-size:22px}
+  .sechead{margin:20px 0 10px;font-size:11px}
+  .tabela-rola{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+  .tabela-rola table{min-width:560px}
+  ol.rot li{padding-left:28px}
+  .foot{flex-direction:column;gap:6px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="top">
+      <div>
+        <h1>Due Diligence automática — o plano e os números</h1>
+        <div class="who">Alex Fontes (Pandora) · para Samuel · RE/MAX Studio 76</div>
+      </div>
+      <div class="datebadge">
+        <svg class="i sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        29 de julho de 2026
+      </div>
+    </div>
+    <div class="momento">
+      Levantei o processo inteiro com o Wilton, medi o custo de cada certidão e conferi no painel o que a Studio 76 gasta hoje. Este documento mostra <b>o que o projeto entrega, quanto custa e o que preciso decidir com você</b>. Cada bloco tem um campo para você escrever — não precisa esperar reunião.
+    </div>
+  </div>
+
+  <div class="quem">
+    <span class="lb">Quem está escrevendo:</span>
+    <button data-a="Samuel">Samuel</button>
+    <button data-a="Alex">Alex</button>
+    <span class="dica">Escolha uma vez; vale para todos os campos.</span>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+    O problema, em números medidos
+  </div>
+
+  <div class="cols4">
+    <div class="kpi red"><div class="v">208</div><div class="l">gestões sem nenhuma diligência, de um total de 308</div></div>
+    <div class="kpi red"><div class="v">208 horas</div><div class="l">de trabalho que essa fila representa — o Wilton leva cerca de 1 hora por caso</div></div>
+    <div class="kpi or"><div class="v">3 a 8</div><div class="l">diligências concluídas por mês, medido no relatório do Pipe</div></div>
+    <div class="kpi or"><div class="v">40 dias</div><div class="l">é o tempo mediano entre o corretor pedir e a diligência ficar pronta</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="corpo">
+      <p style="font-size:14px">Entram cerca de <b>20 casos novos por mês</b>. Pelo tempo que uma diligência leva, seriam <b>20 horas por mês só para não aumentar a fila</b> — mais 208 horas para zerar o que já está parado.</p>
+      <div class="destaque">
+        <b>O ponto que importa:</b> o Wilton não está devagar — uma hora por caso é rápido para o que ele faz. O que não existe na agenda dele são as horas. Por isso o projeto não é "acelerar o Wilton": é fazer o trabalho <b>sem consumir a hora dele</b>, deixando só a conferência e a decisão, que levam minutos.
+      </div>
+    </div>
+    <div class="fb" data-bloco="O problema em números">
+      <div class="fb-q">Seu comentário</div>
+      <textarea class="fb-txt" placeholder="Esses números batem com o que você vê na operação?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    O dinheiro
+  </div>
+
+  <div class="card">
+    <div class="cs">Levantei o custo de cada certidão, uma a uma, e conferi o consumo real do Plexi no painel de vocês.</div>
+    <div class="tabela-rola"><table>
+      <thead>
+        <tr><th style="width:34%"></th><th style="width:22%">Hoje (Plexi)</th><th style="width:22%">Com o sistema novo</th><th>Diferença</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Custo mensal</b><span class="mini">Plexi é pós-pago: paga o que usar</span></td>
+          <td class="money hoje">R$ 1.795<span class="mini">últimos 30 dias</span></td>
+          <td class="money novo">R$ 100<span class="mini">mínimo mensal do serviço novo</span></td>
+          <td class="money">—</td>
+        </tr>
+        <tr>
+          <td><b>Primeiro ano</b><span class="mini">incluindo zerar os 208 casos parados</span></td>
+          <td class="money hoje">~R$ 21.500</td>
+          <td class="money novo">~R$ 2.100</td>
+          <td class="money" style="color:var(--success)">economia de ~R$ 19.400</td>
+        </tr>
+        <tr>
+          <td><b>Anos seguintes</b></td>
+          <td class="money hoje">~R$ 21.500</td>
+          <td class="money novo">R$ 1.200</td>
+          <td class="money" style="color:var(--success)">economia de ~R$ 20.300/ano</td>
+        </tr>
+        <tr>
+          <td><b>Custo de uma diligência</b><span class="mini">dois proprietários, todas as certidões</span></td>
+          <td class="money hoje">—</td>
+          <td class="money novo">R$ 4,70</td>
+          <td class="money">—</td>
+        </tr>
+      </tbody>
+    </table></div>
+    <div class="destaque">
+      A comparação completa é ainda mais favorável: <b>hoje esses R$ 21,5 mil por ano são pagos e a fila continua com 208 casos parados.</b> Não é trocar caro por barato — é pagar bem menos e resolver o que o gasto atual não resolve.
+    </div>
+    <div class="alerta">
+      <b>Uma ressalva honesta:</b> os R$ 1.795 são de um mês só, e incluem os cinco usuários do Plexi — pode haver consultas que não são de diligência. <b>Se você me passar as faturas dos últimos meses, eu fecho a média e o número fica exato.</b> Prefiro corrigir agora a apresentar um número que não se sustente.
+    </div>
+    <div class="fb" data-bloco="Os números de custo">
+      <div class="fb-q">Seu comentário</div>
+      <textarea class="fb-txt" placeholder="Consegue me passar as faturas do Plexi dos últimos meses? Algum outro custo que eu deveria considerar?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    O que já está resolvido — e não é promessa
+  </div>
+
+  <div class="cols3">
+    <div class="card">
+      <h3>A matrícula sai sozinha</h3>
+      <div class="corpo"><div class="cs" style="margin:0">Pelo portal dos Registradores, com o login que já temos. O emolumento é o mesmo que se paga hoje; o que some é o trabalho de pedir. Taxa do serviço: R$ 0,48 por matrícula.</div></div>
+    </div>
+    <div class="card">
+      <h3>O número do IPTU pelo endereço</h3>
+      <div class="corpo"><div class="cs" style="margin:0">Era o passo mais trabalhoso do Wilton — abrir torre por torre para achar a unidade. Resolvido, inclusive em apartamento, usando dado público da Prefeitura. Custo zero.</div></div>
+    </div>
+    <div class="card">
+      <h3>As certidões, mapeadas uma a uma</h3>
+      <div class="corpo"><div class="cs" style="margin:0">As dez certidões de pessoa, com o que cada uma exige, quanto custa e quão confiável está hoje. É o que permite dizer R$ 4,70 por caso com segurança.</div></div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+    Como vamos construir — quatro entregas, uma de cada vez
+  </div>
+
+  <div class="cols4">
+    <div class="fase">
+      <div class="n">ENTREGA 1</div>
+      <div class="t">A fila e o painel</div>
+      <div class="d">Ler a lista de casos parados e mostrar num painel: quantos há, quantos andam, quanto se gastou. É também o painel que dá visibilidade a você e ao Wilton.</div>
+      <div class="g">Não gasta nada — dá para testar à vontade</div>
+    </div>
+    <div class="fase">
+      <div class="n">ENTREGA 2</div>
+      <div class="t">Matrícula e conferências</div>
+      <div class="d">O coração da diligência: puxar a matrícula, ler pela IA, conferir titular, regime e quem assinou o contrato. É a entrega que vai à mesa do Wilton nos três casos de teste.</div>
+      <div class="g">Onde um erro custa mais caro</div>
+    </div>
+    <div class="fase">
+      <div class="n">ENTREGA 3</div>
+      <div class="t">Certidões e IPTU</div>
+      <div class="d">Emissão automática, espera das que demoram e o número do IPTU. Começa com teto de gasto baixo, e nada é emitido sem o Wilton confirmar.</div>
+      <div class="g">Aqui entra dinheiro de verdade</div>
+    </div>
+    <div class="fase">
+      <div class="n">ENTREGA 4</div>
+      <div class="t">Relatório e fechamento</div>
+      <div class="d">Compilado em PDF na ordem que ele usa, texto do relatório pronto e parecer final. Depois disso vem a rotina diária, que roda de madrugada sozinha.</div>
+      <div class="g">Fecha o ciclo</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="fb" data-bloco="As quatro entregas">
+      <div class="fb-q">Seu comentário sobre a ordem das entregas</div>
+      <textarea class="fb-txt" placeholder="Concorda com essa ordem? Prefere ver algo funcionando antes?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+    Decisões que preciso de você — cada uma com seu campo
+  </div>
+
+  <div class="cols2">
+    <div>
+      <div class="dec">
+        <div class="num">DECISÃO 1 · já resolvida, para registro</div>
+        <div class="txt">Aumento do espaço do banco de dados — R$ 135/mês</div>
+        <div class="pq">Já contratado. O banco estava com 386 MB de 500 MB usados e a atualização da base do ITBI sozinha já estouraria o limite. Agora são 8 GB de banco e 100 GB de arquivos, o que cobre o ITBI completo, a base do IPTU, o cofre de certidões e o Pandora OS com clientes reais. É o único custo novo do projeto, e ele se paga várias vezes só com a economia do Plexi.</div>
+        <div class="fb" data-bloco="D1 - banco de dados">
+          <textarea class="fb-txt" placeholder="Algum comentário sobre esse custo?"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="dec">
+        <div class="num">DECISÃO 2 · segurança, urgente</div>
+        <div class="txt">O Elie continua com acesso ativo ao Plexi</div>
+        <div class="pq">Vi na lista de usuários. Como o Plexi é pós-pago, qualquer consulta feita por ele é cobrada da Studio 76. Vale remover o usuário. <b>Combinei com o Alex que, sempre que entrarmos em algum sistema de vocês, verificamos se ele ainda tem acesso e avisamos.</b></div>
+        <div class="fb" data-bloco="D2 - acesso do Elie">
+          <textarea class="fb-txt" placeholder="Consegue remover? Há outros sistemas em que devo verificar?"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="dec">
+        <div class="num">DECISÃO 3 · quando desligar o Plexi</div>
+        <div class="txt">Manter os dois rodando em paralelo por um período?</div>
+        <div class="pq">Minha sugestão: manter o Plexi enquanto testamos os primeiros casos reais, comparando os dois resultados. Assim o Wilton não fica sem rede de segurança. Quando ele confirmar que o novo entrega a mesma coisa, cancelamos — e a economia começa aí.</div>
+        <div class="fb" data-bloco="D3 - quando desligar o Plexi">
+          <textarea class="fb-txt" placeholder="Concorda com o paralelo? Por quanto tempo?"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="dec">
+        <div class="num">DECISÃO 4 · por onde começar o mutirão</div>
+        <div class="txt">Com 208 casos parados, qual a ordem de ataque?</div>
+        <div class="pq">Três critérios possíveis: <b>os mais antigos</b> (a parte da carteira que ninguém alcança), <b>os de maior valor</b> (onde uma surpresa custa mais caro) ou <b>os que estão perto de receber proposta</b> (onde a diligência trava um negócio agora). Dá para combinar, mas o primeiro lote precisa de um critério.</div>
+        <div class="fb" data-bloco="D4 - ordem do mutirão">
+          <textarea class="fb-txt" placeholder="Qual critério você prefere?"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="dec">
+        <div class="num">DECISÃO 5 · integração com o PipeImob</div>
+        <div class="txt">Por enquanto, o sistema só lê o Pipe — não escreve nada</div>
+        <div class="pq">Decidi assim por segurança: é o sistema de produção de vocês, com os negócios reais. O sistema prepara o relatório e o Wilton lança. Se um dia fizer sentido o sistema lançar sozinho, a decisão é dele e sua — não é algo que eu vá fazer por conta.</div>
+        <div class="fb" data-bloco="D5 - integração com o Pipe">
+          <textarea class="fb-txt" placeholder="Concorda com essa postura?"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+
+      <div class="dec">
+        <div class="num">DECISÃO 6 · o que medir</div>
+        <div class="txt">Como saberemos que o projeto está valendo?</div>
+        <div class="pq">Minha proposta de três números, que ficam no painel: <b>diligências concluídas por dia</b>, <b>custo por caso</b> e <b>tamanho da fila</b>. Se em um mês a fila não estiver caindo, o projeto não está entregando — e é melhor você ver isso pelo painel do que pela minha explicação.</div>
+        <div class="fb" data-bloco="D6 - o que medir">
+          <textarea class="fb-txt" placeholder="Quer acompanhar algum outro número?"></textarea>
+          <button class="fb-send">Enviar</button>
+          <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    O que ainda não está resolvido
+  </div>
+
+  <div class="card">
+    <div class="cs">Prefiro que você saiba agora, não depois.</div>
+    <div class="corpo">
+      <ul class="lista y">
+        <li><b>Ler a fila do Pipe automaticamente.</b> A integração já autentica, mas falta o caminho que lista o estoque por status — o suporte do PipeImob ficou de responder em até 48h. Enquanto isso, a lista sai por exportação de planilha, que já funciona.</li>
+        <li><b>TRF3 e e-Proc continuam manuais.</b> O Wilton testou a alternativa que sugeri e ela não funcionou para o TRF3. Existe um caminho, mas depende da decisão dele.</li>
+        <li><b>Nem todo endereço é encontrado</b> na busca do número de IPTU. Nesses casos vale a regra que o Wilton já usa: registrar como não identificado e pedir ao corretor.</li>
+        <li><b>A diligência da venda (DD2)</b> — empresas e antecessores — fica para uma fase seguinte.</li>
+      </ul>
+    </div>
+    <div class="fb" data-bloco="O que não está resolvido">
+      <div class="fb-q">Seu comentário</div>
+      <textarea class="fb-txt" placeholder="Algum desses pontos preocupa? Algum deles é impeditivo para você?"></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="sechead">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+    Qualquer outra coisa
+  </div>
+
+  <div class="card">
+    <div class="cs">Ideia, preocupação, prioridade diferente — escreva aqui.</div>
+    <div class="fb" data-bloco="Livre">
+      <textarea class="fb-txt" placeholder="Escreva à vontade."></textarea>
+      <button class="fb-send">Enviar</button>
+      <div class="fb-done"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Recebido, obrigado!</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Preparado por Alex Fontes · Pandora IA Soluções</span>
+    <span>Due Diligence automática · RE/MAX Studio 76 · 29 de julho de 2026</span>
+  </div>
+
+</div>
+
+<script>
+const SB_URL='https://sobmjqounukzbplrmhkr.supabase.co';
+const SB_KEY='sb_publishable_o5fTXnmp8hhp76WymPJ_MQ_MuJUhvfY';
+const PAUTA='dd-requisitos-samuel';
+let sbc=null;
+try{ if(typeof supabase!=='undefined') sbc=supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.error(e); }
+
+let autor = localStorage.getItem('ddreq_autor_s') || null;
+const btns = document.querySelectorAll('.quem button');
+function pinta(){ btns.forEach(b=>b.classList.toggle('on', b.dataset.a===autor)); }
+btns.forEach(b=>b.addEventListener('click',()=>{
+  autor = (autor===b.dataset.a) ? null : b.dataset.a;
+  if(autor) localStorage.setItem('ddreq_autor_s',autor); else localStorage.removeItem('ddreq_autor_s');
+  pinta();
+}));
+pinta();
+
+document.querySelectorAll('.fb').forEach(fb=>{
+  fb.querySelector('.fb-send').addEventListener('click', async()=>{
+    const ta=fb.querySelector('.fb-txt'); const txt=ta.value.trim();
+    if(!txt){ ta.focus(); return; }
+    const send=fb.querySelector('.fb-send'); send.disabled=true; send.textContent='Enviando…';
+    try{
+      const {error}=await sbc.from('pauta_feedback').insert({
+        pauta:PAUTA, projeto:fb.dataset.bloco, avaliacao:autor||'nao_informado', comentario:txt
+      });
+      if(error) throw error;
+      fb.querySelectorAll('.fb-q,.fb-txt,.fb-send').forEach(x=>x.style.display='none');
+      fb.querySelector('.fb-done').style.display='flex';
+    }catch(e){ console.error(e); send.disabled=false; send.textContent='Não foi — tentar de novo'; }
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Similares — ACM · Pandora OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="acm.css?v=8">
+</head>
+<body>
+<div class="app" data-passo="4" data-primario="Revisar a seleção">
+  <div class="wrap">
+
+    <div class="head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+      <div>
+        <div class="h1">Lista de edifícios similares</div>
+        <div class="sub">Encontrados a partir dos concorrentes que você escolheu — eles não mudam o alvo, eles justificam</div>
+      </div>
+      <span class="tag br"><i></i>Alvo: R$ 10.400/m² · das vendas reais deste edifício</span>
+    </div>
+
+    <div class="grid3">
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-t">Edifício Monte Belo</span>
+          <span class="card-st">5 vendas</span>
+        </div>
+        <div class="card-bd" style="display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:96px;height:96px;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--muted);">
+            <svg viewBox="0 0 24 24" style="width:22px;height:22px;"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="font-size:12px;color:var(--muted);">Rua Fradique Coutinho, 110</div>
+              <div style="font-size:11.5px;color:var(--muted);">a 300 m</div>
+            </div>
+            <div class="val"><b>R$ 10.150/m²</b><span>Mediana</span></div>
+            <span class="tag perto"><i></i>2% abaixo do alvo</span>
+            <div class="sw on" style="margin-top:2px;"><span class="tr"></span>Incluir na avaliação</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-t">Edifício Aurora</span>
+          <span class="card-st">8 vendas</span>
+        </div>
+        <div class="card-bd" style="display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:96px;height:96px;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--muted);">
+            <svg viewBox="0 0 24 24" style="width:22px;height:22px;"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="font-size:12px;color:var(--muted);">Rua Artur de Azevedo, 450</div>
+              <div style="font-size:11.5px;color:var(--muted);">a 300 m</div>
+            </div>
+            <div class="val"><b>R$ 10.500/m²</b><span>Mediana</span></div>
+            <span class="tag perto"><i></i>1% acima do alvo</span>
+            <div class="sw on" style="margin-top:2px;"><span class="tr"></span>Incluir na avaliação</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-t">Condomínio Jardim Europa</span>
+          <span class="card-st">3 vendas</span>
+        </div>
+        <div class="card-bd" style="opacity:.55;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:96px;height:96px;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--muted);">
+            <svg viewBox="0 0 24 24" style="width:22px;height:22px;"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="font-size:12px;color:var(--muted);">Rua dos Pinheiros, 1020</div>
+              <div style="font-size:11.5px;color:var(--muted);">a 300 m</div>
+            </div>
+            <div class="val"><b>R$ 9.800/m²</b><span>Mediana</span></div>
+            <span class="tag medio"><i></i>6% abaixo do alvo</span>
+            <div class="sw" style="margin-top:2px;"><span class="tr"></span>Incluir na avaliação</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Adicionar edifício à mão -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-t">Adicionar edifício</span>
+        <span class="card-st">faltou algum que você conhece?</span>
+      </div>
+      <div class="card-bd">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div class="f" style="flex:1;">
+            <input placeholder="Nome do edifício ou endereço">
+            <span class="hint">o sistema busca as vendas registradas dele no ITBI</span>
+          </div>
+          <button class="btn btn-primary" style="height:44px;">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- As vendas de cada edifício, para escolher uma a uma -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-t">As vendas destes edifícios</span>
+        <span class="card-st">13 vendas · escolha quais entram na apresentação</span>
+      </div>
+      <div class="card-bd" style="padding:0;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:11px;">
+            <span class="cb on"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+            <b style="font-family:var(--font-brand);font-size:13.5px;">Edifício Monte Belo</b>
+            <span class="tag"><i></i>5 vendas · mediana R$ 10.150/m²</span>
+          </div>
+          <button class="lnk">marcar todas deste edifício</button>
+        </div>
+        <table class="tbl" style="padding:0 16px;">
+          <tbody>
+            <tr><td style="width:44px;padding-left:16px;"><span class="cb on"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span></td><td>Set/2023</td><td>Apto 71</td><td>150 m²</td><td class="num">R$ 1.530.000</td><td class="num" style="padding-right:16px;">R$ 10.200</td></tr>
+            <tr><td style="padding-left:16px;"><span class="cb on"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span></td><td>Mar/2022</td><td>Apto 41</td><td>150 m²</td><td class="num">R$ 1.515.000</td><td class="num" style="padding-right:16px;">R$ 10.100</td></tr>
+            <tr><td style="padding-left:16px;"><span class="cb"></span></td><td>Jun/2020</td><td>Apto 21</td><td>150 m²</td><td class="num">R$ 1.395.000</td><td class="num" style="padding-right:16px;">R$ 9.300</td></tr>
+          </tbody>
+        </table>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:11px;">
+            <span class="cb on"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+            <b style="font-family:var(--font-brand);font-size:13.5px;">Edifício Aurora</b>
+            <span class="tag"><i></i>8 vendas · mediana R$ 10.500/m²</span>
+          </div>
+          <button class="lnk">marcar todas deste edifício</button>
+        </div>
+        <table class="tbl">
+          <tbody>
+            <tr><td style="width:44px;padding-left:16px;"><span class="cb on"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span></td><td>Dez/2023</td><td>Apto 102</td><td>162 m²</td><td class="num">R$ 1.750.000</td><td class="num" style="padding-right:16px;">R$ 10.802</td></tr>
+            <tr><td style="padding-left:16px;"><span class="cb on"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span></td><td>Ago/2022</td><td>Apto 62</td><td>162 m²</td><td class="num">R$ 1.701.000</td><td class="num" style="padding-right:16px;">R$ 10.500</td></tr>
+          </tbody>
+        </table>
+
+        <div style="padding:12px 16px;border-top:1px solid var(--border);">
+          <button class="lnk">Ver as 8 vendas restantes<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="note quiet" style="margin-top:16px;">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <span>Estas vendas entram na apresentação como comprovação. <b>O alvo continua vindo do próprio edifício do imóvel.</b></span>
+    </div>
+
+  </div>
+</div>
+<script src="casca.js?v=8"></script>
+</body>
+</html>

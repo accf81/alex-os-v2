@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imóveis — Alex OS</title>
+  <link rel="stylesheet" href="css/base.css?v=20260801b">
+  <style>
+    /* ── Pipeline kanban + Cards de captação ──
+       Movidos para o design system central (css/base.css).
+       Não redefinir aqui — alterações de visual vão no base.css. */
+
+    /* ── Perdidos ── */
+    .perdido-section { margin-top: 20px; }
+    .perdido-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .perdido-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 6px; }
+    .perdido-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      opacity: .7;
+    }
+    .perdido-card:hover { opacity: 1; border-color: var(--danger); }
+
+    /* ── Subtabs: movidos para o design system central (css/base.css) ── */
+    .subview { display:none; }
+    .subview.active { display:block; }
+
+    /* ── Condomínios: movidos para o design system central (css/base.css, 05/07). ── */
+    .cond-ficha-overlay { position:fixed;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column;overflow:hidden; }
+    .cond-ficha-overlay.open { display:flex; }
+    .cond-ficha-hdr { display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0; }
+    .cond-ficha-titulo { font-weight:700;font-size:17px;flex:1; }
+    .cond-ficha-body { flex:1;overflow-y:auto;padding:20px 24px;width:100%; }
+
+    /* ── Estágio selector no modal ── */
+    .stage-steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+    .stage-step {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+      transition: .15s;
+    }
+    .stage-step.active { font-weight: 600; }
+    .stage-step:hover { background: var(--surface); }
+
+    /* ── Log de atividades ── */
+    .obs-log { max-height: 180px; overflow-y: auto; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .obs-entry { background: var(--surface2); border-radius: 6px; padding: 7px 10px; font-size: 12px; }
+    .obs-entry-ts { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+    .obs-entry-text { white-space: pre-wrap; }
+    .obs-add-row { display: flex; gap: 8px; align-items: flex-end; }
+    .obs-add-row textarea { flex: 1; min-height: 60px; }
+
+    /* ── Seção no modal ── */
+    .modal-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--accent);
+      margin: 16px 0 10px;
+    }
+
+    .modal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1; }
+    .modal-close:hover { color: var(--text); }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+
+    /* ── ACM Builder ── */
+    .acm-overlay{display:none;position:fixed;inset:0;z-index:300;background:var(--bg);flex-direction:column;overflow:hidden}
+    .acm-overlay.open{display:flex}
+    .acm-hdr{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .acm-hdr-info{flex:1;min-width:0}
+    .acm-hdr-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .acm-hdr-sub{font-size:11px;color:var(--muted)}
+    .acm-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+    /* Card do Builder (redesign 10.4, 19/07/2026) — sem padding no wrapper, borda em degradê;
+       todo o respiro vem do header/body internos (dobrar isso aqui foi o bug do mockup rodada 2). */
+    .acmb-card{overflow:hidden;border:1px solid transparent;border-radius:var(--radius-lg);background:linear-gradient(var(--surface),var(--surface)) padding-box, var(--edge) border-box;box-shadow:var(--shadow-card);flex-shrink:0}
+    .acmb-hdr{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .acmb-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);white-space:nowrap}
+    .acmb-title .n{background:var(--surface3);color:var(--muted);border-radius:20px;padding:1px 8px;font-size:10px;margin-left:6px;text-transform:none;letter-spacing:0}
+    .acmb-hdr-stats{font-size:11px;color:var(--muted);white-space:nowrap}
+    .acmb-hdr-stats strong{color:var(--text)}
+    .acmb-body{padding:12px}
+    /* 19/07/2026 — voltou a ter o respiro normal (Alex preferiu isso a ficar colado no menu de cima).
+       translateZ/will-change ficam mesmo assim — não mudam o visual, só ajudam o navegador a não
+       piscar o conteúdo de trás durante o scroll (não elimina 100%, mas reduz). */
+    .acmb-sticky{position:sticky;top:0;z-index:5;margin-bottom:4px;transform:translateZ(0);will-change:transform;backface-visibility:hidden}
+    .acm-row{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap}
+    .acm-fi{display:flex;flex-direction:column;gap:3px;min-width:0}
+    .acm-fi label{font-size:10px;color:var(--muted);white-space:nowrap}
+    .acm-fi input,.acm-fi select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:5px 6px;color:var(--text);font-size:12px;width:100%;font-family:inherit}
+    .acm-fi.grow{flex:1;min-width:130px}
+    .acm-fi.w50{width:50px;flex-shrink:0}
+    .acm-fi.w46{width:46px;flex-shrink:0}
+    .acm-fi.w36{width:36px;flex-shrink:0}
+    .acm-fi.w36 label{text-align:center;display:block}
+    .acm-fi.w36 input{text-align:center;font-weight:700;padding:5px 2px}
+    .acm-fi.ac input{color:var(--accent);font-weight:600}
+    /* Faixas de preço */
+    .acmb-faixas-row{display:flex;gap:10px;flex-wrap:wrap;padding:12px}
+    .acmb-fx{flex:1;min-width:150px;border-radius:var(--radius-lg);padding:12px 14px;text-align:center}
+    .acmb-fx-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+    .acmb-fx-val{font-size:24px;font-weight:800;letter-spacing:-.01em;margin-bottom:3px}
+    .acmb-fx-sub{font-size:9.5px;color:var(--muted)}
+    .acmb-fx.g{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.35)}
+    .acmb-fx.y{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35)}
+    .acmb-fx.r{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)}
+    .acmb-fx.g .acmb-fx-lbl,.acmb-fx.g .acmb-fx-val{color:var(--success)}
+    .acmb-fx.y .acmb-fx-lbl,.acmb-fx.y .acmb-fx-val{color:var(--warn)}
+    .acmb-fx.r .acmb-fx-lbl,.acmb-fx.r .acmb-fx-val{color:var(--danger)}
+    .acmb-vr-row{display:flex;border-top:1px solid var(--border)}
+    .acmb-vr-col{flex:1;padding:12px 14px}
+    .acmb-vr-col+.acmb-vr-col{border-left:1px solid var(--border)}
+    .acmb-vr-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:5px}
+    .acmb-vr-lbl.accent{color:var(--accent)}
+    .acmb-vr-val{font-size:18px;font-weight:700}
+    .acmb-vr-val.accent{color:var(--accent);font-weight:800}
+    .acmb-vr-sub{font-size:11px;color:var(--muted);font-weight:400}
+    .acmb-desconto{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+    .acmb-desconto input{width:44px;padding:3px 5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-weight:700;font-size:12px;text-align:center;font-family:inherit}
+    /* Válidos sempre visível + Descartados dentro da MESMA tabela (garante colunas alinhadas e resize funcionando nos dois) */
+    .acmb-sub-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 12px 4px}
+    tr.acmb-disc-divider td{background:var(--surface2);color:var(--muted);font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+    tr.acmb-disc-divider:hover td{color:var(--text)}
+    div.acmb-disc-divider{background:var(--surface2);color:var(--muted);font-size:10.5px;font-weight:600;cursor:pointer;padding:6px 10px}
+    div.acmb-disc-divider:hover{color:var(--text)}
+    .acmb-row-actions{display:flex;gap:2px;justify-content:center}
+    /* Condomínios Similares — cards compactos, vários por linha */
+    .acmb-sim-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+    .acmb-sim-item{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md)}
+    .acmb-sim-nome{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .acmb-sim-sub{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    /* Nossa Leitura — 3 colunas */
+    .acmb-leitura-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .acmb-fi-lbl{font-size:11px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .acmb-fi-lbl svg{width:13px;height:13px;flex-shrink:0}
+    .acm-new-conc{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface2)}
+    .acm-new-conc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px}
+    .acm-arow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;align-items:flex-end}
+    .acm-arow input,.acm-arow select{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-size:12px;font-family:inherit}
+    .opc-gear{cursor:pointer;color:var(--muted);font-size:13px;margin-left:5px;user-select:none}
+    .opc-gear:hover{color:var(--accent)}
+    .opc-row{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;margin-bottom:5px}
+    .opc-val{flex:1;font-size:13px}
+    .opc-ic{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;width:26px;height:26px;font-size:13px;line-height:1;padding:0}
+    .opc-ic:disabled{opacity:.3;cursor:default}
+    .opc-del{color:var(--danger);border-color:rgba(239,68,68,.4)}
+    /* Wizard de Captação (2 etapas) */
+    .cap-progress{display:flex;gap:5px;align-items:center;margin-left:auto;margin-right:10px}
+    .cap-seg{width:28px;height:4px;border-radius:2px;background:var(--border)}
+    .cap-seg.on{background:var(--accent)}
+    .cap-step-tag{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+    .cap-cond-card{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;background:var(--surface)}
+    .cap-cond-card.ok{border-color:var(--success);background:rgba(34,197,94,.08)}
+    .cap-cond-card .cap-cond-txt{flex:1;min-width:160px;font-size:13px}
+    .cap-cond-card .cap-cond-src{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-right:4px}
+    /* Tabelas densas do Builder (Concorrentes/Vendidos ITBI) */
+    .acm-tw{overflow-x:auto}
+    .acmb-tw table{width:100%;border-collapse:collapse;font-size:11px}
+    .acmb-tw th{padding:5px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--surface2);position:relative;user-select:none}
+    .acmb-tw td{padding:5px 7px;border-bottom:1px solid var(--surface2);white-space:nowrap;vertical-align:middle}
+    .acmb-tw tr:hover td{background:var(--surface2)}
+    .acmb-tw tr:last-child td{border-bottom:none}
+    /* Selo "% transmitido" (proporção ITBI) — badge menor pra caber na linha densa */
+    .acm-prop-cell{display:flex;flex-direction:column;align-items:flex-start}
+    .acm-prop-cell .gest-outline-badge{font-size:9px;padding:1px 7px;margin-top:2px}
+    .acmb-img{width:40px;height:28px;object-fit:cover;border-radius:4px;display:block}
+    .acmb-img-ph{width:40px;height:28px;border:1px dashed var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+    .acmb-img-ph svg{width:14px;height:14px}
+    .acm-itbi-search{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 12px}
+    .acm-search-group{margin-bottom:10px}
+    .acm-search-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+    .acm-search-addr-row{display:flex;gap:6px;margin-bottom:4px}
+    .acm-search-addr-row input{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-size:12px;font-family:inherit;flex:1}
+    .acm-ac-wrap{position:relative}
+    .acm-ac-drop{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:7px;z-index:50;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+    .acm-ac-item{padding:6px 10px;font-size:12px;cursor:pointer}
+    .acm-ac-item:hover{background:var(--surface2)}
+    .col-resizer{position:absolute;right:0;top:0;width:6px;height:100%;cursor:col-resize;user-select:none}
+    .col-resizer::after{content:'';position:absolute;right:1px;top:15%;width:2px;height:70%;background:var(--border);border-radius:2px;opacity:0;transition:opacity .15s}
+    .col-resizer:hover::after,.col-resizer:active::after{opacity:1}
+    /* Botões de ação do card movidos para .cap-actions + .btn (css/base.css) */
+    /* 4b — Visitas */
+    .vis-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:3px 6px 3px 10px;font-size:12px;margin:0 6px 6px 0}
+    .vis-chip-x{cursor:pointer;color:var(--muted);font-weight:700}
+    .vis-chip-x:hover{color:var(--danger)}
+    .vis-drop-item{padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
+    .vis-drop-item:hover{background:var(--surface2)}
+    .vis-drop-empty{padding:8px 12px;font-size:12px;color:var(--muted)}
+    .lead-badge{font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px;color:#fff}
+    .lead-badge.s-novo{background:var(--muted)}
+    .lead-badge.s-contatado{background:var(--accent)}
+    .lead-badge.s-visitou{background:var(--info)}
+    .lead-badge.s-negociacao{background:var(--success)}
+    .lead-badge.s-descartado{background:var(--danger)}
+    .vis-pill.on.s-novo{background:var(--muted)}
+    .vis-pill.on.s-contatado{background:var(--accent)}
+    .vis-pill.on.s-visitou{background:var(--info)}
+    .vis-pill.on.s-negociacao{background:var(--success)}
+    .vis-pill.on.s-descartado{background:var(--danger)}
+    .lf-sel{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+    .lf-sel span{flex:1;font-size:13px}
+    .vis-block{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+    .vis-block-top{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+    .vis-block-top input[type=time]{width:96px;flex-shrink:0}
+    .vis-imovel-chosen{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px}
+    .vis-imovel-chosen span{flex:1;min-width:0}
+    .vis-imovel-search{flex:1;position:relative;min-width:0}
+    .vis-imovel-search input{width:100%}
+    .vis-imovel-drop{position:absolute;left:0;right:0;top:100%;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:170px;overflow-y:auto}
+    .vis-block-del{background:none;border:none;cursor:pointer;font-size:15px}
+    .vis-pills{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .vis-pill-label{font-size:11px;color:var(--muted);margin-right:2px}
+    .vis-pill{font-size:12px;padding:3px 10px;border-radius:8px;border:1px solid var(--border);color:var(--muted);cursor:pointer}
+    .vis-pill.on{border-color:transparent;color:#fff;font-weight:700}
+    .vis-pill.on.vis-st-agendada,.vis-pill.on.vis-int-morno{background:var(--accent)}
+    .vis-pill.on.vis-st-realizada{background:var(--success)}
+    .vis-pill.on.vis-st-cancelada,.vis-pill.on.vis-int-quente{background:var(--danger)}
+    .vis-pill.on.vis-int-frio{background:var(--muted)}
+    .vis-st{font-size:11px;padding:1px 8px;border-radius:12px;font-weight:700;color:#fff}
+    .vis-st-agendada{background:var(--accent)}
+    .vis-st-realizada{background:var(--success)}
+    .vis-st-cancelada{background:var(--danger)}
+    .vis-inter{font-size:11px;padding:1px 7px;border-radius:10px;color:#fff}
+    .vis-int-quente{background:var(--danger)}
+    .vis-int-morno{background:var(--accent)}
+    .vis-int-frio{background:var(--muted)}
+
+    /* ── Imóveis Carteira ── */
+    /* Visual da grade/card/ficha/tabs/pessoas redesenhado e movido pro base.css (redesign 10.4, 06/07/2026). */
+    /* Fica aqui só o que ainda é COMPARTILHADO com áreas não migradas (Captação/Gestão): */
+    .cv-actionbar{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}
+    .status-seg{display:flex;gap:6px;flex-wrap:wrap}
+    .status-opt{font-family:var(--font-brand);font-size:12px;font-weight:700;padding:8px 14px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer}
+    .status-opt.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    .cv-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+    .cv-badge-accent {background:var(--accent); color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px}
+    .cv-badge-success{background:var(--success);color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px}
+    .cv-badge-info{background:var(--info);color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px}
+    .cv-badge-neutral{background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+    .cv-badge-muted{background:var(--muted);color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px}
+    .cv-badge-warn{background:transparent;color:var(--warn);border:1px dashed var(--warn);font-size:10px;font-weight:700;padding:1px 8px;border-radius:20px}
+
+    .perd-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+
+    .pessoa-search-item:hover{background:var(--surface2)}
+    .pessoa-search-item:last-child{border-bottom:none}
+    /* Toggle */
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--surface2)}
+    .toggle-label{font-size:13px}
+    .toggle-switch{position:relative;width:40px;height:22px;flex-shrink:0}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;inset:0;background:var(--surface2);border:1px solid var(--border);border-radius:22px;cursor:pointer;transition:.2s}
+    .toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.2s}
+    .toggle-switch input:checked + .toggle-slider{background:var(--accent);border-color:var(--accent)}
+    .toggle-switch input:checked + .toggle-slider::before{transform:translateX(18px);background:#fff}
+    /* Anúncios */
+    .anuncio-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface2)}
+    /* ── Design System — classes ds-* (HTML gerado por JS) ──────────────────
+       Tipografia e cor definidas na Application Layer do base.css.
+       Aqui: apenas layout, espaçamento, display e border-radius.
+       NUNCA usar style="font-..." em strings JS — sempre classe ds-*.
+    ─────────────────────────────────────────────────────────────────────── */
+    .ds-section-title  { margin-bottom: 8px; }
+    .ds-section-label  { display: block; margin-bottom: 6px; }
+    .ds-price          { display: block; }
+    .ds-nome           { display: block; }
+    .ds-meta           { display: block; margin-top: 2px; }
+    .ds-nome-sm        { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ds-price-sm       { white-space: nowrap; }
+
+    /* ── Fatia 5 — KPIs ── */
+    .col-accent{color:var(--accent)} .col-success{color:var(--success)} .col-danger{color:var(--danger)}
+    .kpi-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+    .kpi-period-seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px}
+    .kpi-period{font-family:var(--font-brand);font-weight:500;font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer;color:var(--muted);border:0;background:transparent}
+    .kpi-period.on{background:var(--accent);color:#fff}
+    .kpi-period-lbl{font-size:12px;color:var(--muted)}
+    .kpi-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .kpi-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+    .kpi-card-hdr{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+    .kpi-card-body{padding:16px}
+    .kpi-big{font-family:var(--font-brand);font-weight:900;font-size:30px;letter-spacing:-.02em;line-height:1}
+    .kpi-metabar{height:14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:12px}
+    .kpi-metabar-fill{height:100%;background:var(--accent);border-radius:6px}
+    .kpi-tag{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--success-pale);color:var(--success)}
+    .kpi-funnel-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .kpi-funnel-stage{width:110px;font-size:12px;font-weight:600;color:var(--muted);text-align:right;flex-shrink:0}
+    .kpi-funnel-track{flex:1;background:var(--surface2);border-radius:8px;overflow:hidden;height:36px}
+    .kpi-funnel-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-dark));display:flex;align-items:center;padding-left:12px;font-family:var(--font-brand);font-weight:700;font-size:14px;color:#fff}
+    .kpi-funnel-conv{width:54px;font-size:12px;color:var(--success);font-weight:700;flex-shrink:0}
+    .kpi-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px}
+    .kpi-box-lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+    .kpi-box-val{font-family:var(--font-brand);font-weight:900;font-size:24px}
+    @media(max-width:720px){.kpi-grid2,.kpi-grid3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar"></nav>
+<script src="js/sidebar.js?v=20260728a"></script>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<div class="sb-main">
+  <div class="sb-topbar">
+    <span class="sb-topbar-title">Pandora</span>
+    <div class="sb-topbar-right">
+      <button class="btn btn-primary btn-sm" id="btnNovo" onclick="onNovoBtnClick()">+ Novo</button>
+      <!-- Clock and theme toggle moved to js/sidebar.js -->
+    </div>
+  </div>
+
+  <div class="subtabs" style="margin:0;padding:14px 20px 2px">
+    <div class="subtab" id="stab-kpis"        onclick="showTab('kpis')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>KPIs</div>
+    <div class="subtab" id="stab-garimpo"    onclick="showTab('garimpo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Garimpo</div>
+    <div class="subtab" id="stab-pipeline"   onclick="showTab('pipeline')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Captação</div>
+    <div class="subtab" id="stab-acm"        onclick="showTab('acm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><line x1="20.5" y1="20.5" x2="15" y2="15"/><line x1="7.5" y1="12" x2="7.5" y2="10.5"/><line x1="10" y1="12" x2="10" y2="8"/><line x1="12.5" y1="12" x2="12.5" y2="9.5"/></svg>ACM</div>
+    <div class="subtab" id="stab-gestao"      onclick="showTab('gestao')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>Gestão Exclusiva</div>
+    <div class="subtab" id="stab-visitas"     onclick="showTab('visitas')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads</div>
+    <div class="subtab" id="stab-vendas"      onclick="showTab('vendas')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Vendas</div>
+    <div class="subtab" id="stab-carteira"    onclick="showTab('carteira')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Imóveis</div>
+    <div class="subtab" id="stab-condominios" onclick="showTab('condominios')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Condomínios</div>
+  </div>
+
+<div class="page" style="padding-top:10px">
+
+  <div class="subview" id="sv-garimpo">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+
+  <div class="subview active" id="sv-pipeline">
+    <div id="pipeline" class="pipeline">
+      <div class="loading"><div class="spinner"></div> Carregando...</div>
+    </div>
+    <div class="perdido-section" id="perdidoSection" style="display:none">
+    <div class="perdido-hdr" onclick="togglePerdidos()">
+      <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Perdidos</span>
+      <span id="perdidoCount" class="pipe-col-count">0</span>
+      <span id="perdidoArrow" style="margin-left:auto;font-size:12px">▸</span>
+    </div>
+      <div id="perdidoGrid" class="perdido-grid" style="display:none"></div>
+    </div>
+  </div><!-- /sv-pipeline -->
+
+  <div class="subview" id="sv-acm">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+
+  <div class="subview" id="sv-condominios">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+
+  <div class="subview" id="sv-gestao">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+
+  <div class="subview" id="sv-carteira">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+
+  <div class="subview" id="sv-visitas">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+
+  <div class="subview" id="sv-vendas">
+    <div id="vendasList" class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+
+  <div class="subview" id="sv-kpis">
+    <div id="kpisBox" class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+</div>
+
+<!-- ── Overlay Fechamento ── -->
+<div class="modal-overlay" id="vendasOverlay" onclick="closeVendasFicha()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:620px;max-height:90vh;overflow-y:auto">
+    <div class="modal-hdr">
+      <div class="modal-title" id="vfTitulo">Novo Fechamento</div>
+      <span id="vfPerdidaBadge" style="display:none;margin-left:10px;background:var(--danger-pale);color:#f87171;border:1px solid rgba(239,68,68,.4);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700"></span>
+      <button class="modal-close" onclick="closeVendasFicha()">×</button>
+    </div>
+
+    <!-- Imóvel -->
+    <div class="form-group">
+      <label>Imóvel *</label>
+      <input type="hidden" id="vfImovelId">
+      <div style="display:flex;gap:6px">
+        <div style="flex:1;position:relative">
+          <input type="text" id="vfImovelBusca" placeholder="Buscar na Carteira de Imóveis..." oninput="vfBuscarImovel()" autocomplete="off" style="width:100%">
+          <div id="vfImovelDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;z-index:200;max-height:160px;overflow-y:auto"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="vfToggleMiniImovel()" title="Cadastrar novo imóvel">+</button>
+      </div>
+      <div id="vfImovelSel" style="display:none;margin-top:6px;padding:6px 10px;background:var(--surface2);border-radius:6px;font-size:12px;display:flex;align-items:center;justify-content:space-between">
+        <span id="vfImovelSelTxt"></span>
+        <button onclick="vfClearImovel()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">×</button>
+      </div>
+      <div id="vfMiniImovel" style="display:none;margin-top:8px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--accent)">Cadastro rápido de imóvel</div>
+        <div class="form-row cols-2">
+          <div class="form-group" style="margin-bottom:8px"><label>Endereço *</label><input type="text" id="vfMIEnd" placeholder="Ex: Rua X, 100, Ap. 82"></div>
+          <div class="form-group" style="margin-bottom:8px"><label>Tipo</label>
+            <select id="vfMITipo"><option value="Apartamento">Apartamento</option><option value="Casa">Casa</option><option value="Comercial">Comercial</option><option value="Outro">Outro</option></select>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="vfToggleMiniImovel()">Cancelar</button>
+          <button class="btn btn-primary btn-sm" onclick="vfCriarImovelRapido()">Criar e selecionar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comprador -->
+    <div class="form-group">
+      <label>Comprador</label>
+      <input type="hidden" id="vfCompradorId">
+      <div style="display:flex;gap:6px">
+        <div style="flex:1;position:relative">
+          <input type="text" id="vfCompradorBusca" placeholder="Buscar em Contatos..." oninput="vfBuscarComprador()" autocomplete="off" style="width:100%">
+          <div id="vfCompradorDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;z-index:200;max-height:160px;overflow-y:auto"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="vfToggleMiniComprador()" title="Cadastrar novo contato">+</button>
+      </div>
+      <div id="vfCompradorSel" style="display:none;margin-top:6px;padding:6px 10px;background:var(--surface2);border-radius:6px;font-size:12px;display:flex;align-items:center;justify-content:space-between">
+        <span id="vfCompradorSelTxt"></span>
+        <button onclick="vfClearComprador()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">×</button>
+      </div>
+      <div id="vfMiniComprador" style="display:none;margin-top:8px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--accent)">Cadastro rápido de contato</div>
+        <div class="form-row cols-2">
+          <div class="form-group" style="margin-bottom:8px"><label>Nome *</label><input type="text" id="vfMCNome" placeholder="Nome completo"></div>
+          <div class="form-group" style="margin-bottom:8px"><label>Telefone</label><input type="text" id="vfMCTel" placeholder="(11) 9 0000-0000" oninput="fmtTelInput(this)" maxlength="16"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="vfToggleMiniComprador()">Cancelar</button>
+          <button class="btn btn-primary btn-sm" onclick="vfCriarCompradorRapido()">Criar e selecionar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Etapa -->
+    <div class="form-group"><label>Etapa atual</label>
+      <select id="vfEtapa" onchange="onVfEtapaChange()">
+        <option value="proposta">Proposta</option>
+        <option value="aceite">Aceite</option>
+        <option value="contrato">Contrato / Certidões</option>
+        <option value="assinatura">Assinatura</option>
+        <option value="escritura">Escritura</option>
+      </select>
+    </div>
+
+    <!-- Valores: Venda | Comissão | % -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="form-group"><label>Valor da venda (R$)</label><input type="text" id="vfValorVenda" placeholder="0,00" oninput="fmtCurInput(this);vfCalc('venda')"></div>
+      <div class="form-group"><label>Comissão total (R$)</label><input type="text" id="vfComissao" placeholder="0,00" oninput="fmtCurInput(this);vfCalc('comissao')"></div>
+      <div class="form-group"><label>% Comissão</label><input type="number" id="vfComissaoPct" placeholder="0" min="0" max="100" step="0.01" oninput="vfCalc('pct')"></div>
+    </div>
+
+    <!-- Outro corretor -->
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal">
+        <input type="checkbox" id="vfOutroCorretor" style="width:16px;height:16px;accent-color:var(--accent)" onchange="onOutroCorretorChange();vfCalcAlex()">
+        <span>Tem outro corretor?</span>
+      </label>
+    </div>
+    <div id="vfOutroCorretorRow" style="display:none;padding:12px;background:var(--surface);border-radius:8px;margin-bottom:12px">
+      <div class="form-group" style="margin-bottom:0"><label>Tipo do corretor</label>
+        <select id="vfTipoCorretor" onchange="vfCalcAlex()">
+          <option value="imobiliaria">Imobiliária (50/50)</option>
+          <option value="autonomo">Autônomo (60/40 para mim)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Pilar: % | Valor Pilar | Valor líquido Alex -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="form-group"><label>% Pilar (da minha parte)</label><input type="number" id="vfPctPilar" placeholder="0" min="0" max="100" step="0.1" oninput="vfCalcPilar('pct')"></div>
+      <div class="form-group"><label>Valor Pilar (R$)</label><input type="text" id="vfValorPilar" placeholder="0,00" oninput="fmtCurInput(this);vfCalcPilar('valor')"></div>
+      <div class="form-group"><label>Valor líquido Alex (R$)</label><input type="text" id="vfValorAlex" placeholder="calculado" oninput="fmtCurInput(this)"></div>
+    </div>
+
+    <!-- Tipo de pagamento -->
+    <div style="border-top:1px solid var(--border);margin:16px 0;padding-top:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">Pagamento</div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label>Forma de pagamento</label>
+          <select id="vfTipoPag" onchange="onTipoPagChange()">
+            <option value="avista">À vista</option>
+            <option value="financiamento">Financiamento bancário</option>
+            <option value="consorcio">Consórcio</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Nº de parcelas de comissão</label>
+          <select id="vfNParcelas" onchange="onNParcelasChange()">
+            <option value="1">1 parcela</option>
+            <option value="2">2 parcelas</option>
+          </select>
+        </div>
+      </div>
+      <div id="vfFinRow" style="display:none">
+        <div class="form-row cols-2">
+          <div class="form-group"><label>Recursos próprios (R$)</label><input type="text" id="vfRecProprios" placeholder="0,00" oninput="fmtCurInput(this)"></div>
+          <div class="form-group"><label id="vfFinLabel">Valor financiado (R$)</label><input type="text" id="vfFinanciado" placeholder="0,00" oninput="fmtCurInput(this)"></div>
+        </div>
+      </div>
+      <div id="vfOutroPagRow" style="display:none">
+        <div class="form-group"><label>Descreva a forma de pagamento</label><input type="text" id="vfPagObs" placeholder="Ex: Permuta parcial, FGTS..."></div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label>Parcela 1 — % da comissão</label><input type="number" id="vfP1Pct" placeholder="100" min="0" max="100" step="1"></div>
+        <div class="form-group"><label>Parcela 1 — Data prevista</label><input type="date" id="vfP1Data"></div>
+      </div>
+      <div id="vfP2Row" style="display:none">
+        <div class="form-row cols-2">
+          <div class="form-group"><label>Parcela 2 — % da comissão</label><input type="number" id="vfP2Pct" placeholder="50" min="0" max="100" step="1"></div>
+          <div class="form-group"><label>Parcela 2 — Data prevista</label><input type="date" id="vfP2Data"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group"><label>Observações</label><textarea id="vfObs" rows="2" placeholder="Notas..." style="width:100%;resize:vertical;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px"></textarea></div>
+
+    <div class="modal-actions">
+      <div class="modal-actions-left" style="display:flex;gap:8px">
+        <button class="btn btn-danger btn-sm" id="btnVFDel" onclick="excluirFechamento()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+        <button class="btn btn-ghost btn-sm" id="btnVFLanc" onclick="criarLancamentosFechamento()" style="display:none;color:var(--success);border-color:var(--success)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Criar no FMS</button>
+        <button class="btn btn-sm" id="btnVFVendido" onclick="confirmarVendido()" style="display:none;background:var(--success);border-color:var(--success);color:#fff"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>Marcar imóvel como Vendido</button>
+        <button class="btn btn-sm" id="btnVFPerdida" onclick="openVendaPerdida(editFechId)" style="display:none;background:transparent;color:var(--danger);border:1px solid rgba(239,68,68,.45)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Venda perdida</button>
+        <button class="btn btn-ghost btn-sm" id="btnVFReativar" onclick="reativarVenda()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Reativar venda</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeVendasFicha()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnVFSalvar" onclick="salvarFechamento()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Imóvel ── -->
+<div class="modal-overlay" id="capOverlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:600px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="capModalTitulo">Novo Imóvel</div>
+      <div class="cap-progress" id="capProgress" style="display:none">
+        <span class="cap-seg" id="capSeg1"></span>
+        <span class="cap-seg" id="capSeg2"></span>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+
+    <!-- ════ ETAPA 1 — Proprietário ════ -->
+    <div id="capStep1">
+    <div class="modal-section-title"><span class="cap-step-tag" id="capTag1" style="display:none">Etapa 1 de 2 · </span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Proprietário</div>
+    <div class="form-group">
+      <label>Proprietário (buscar ou criar) *</label>
+      <div style="position:relative">
+        <input type="text" id="capPropSearch" placeholder="Digite o nome..." oninput="capSearchProp(this.value)" autocomplete="off">
+        <div id="capPropDrop" class="pessoa-search-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;max-height:220px;overflow-y:auto"></div>
+      </div>
+      <div id="capPropSel" style="display:none;margin-top:6px;padding:6px 10px;border-radius:6px;font-size:12px;align-items:center;gap:8px">
+        <span style="flex:1"><strong id="capPropSelTxt"></strong> <span id="capPropSelKind" style="font-weight:400;opacity:.85"></span></span>
+        <button type="button" id="capPropEditBtn" onclick="capToggleDetalhes()" style="background:none;border:1px solid currentColor;border-radius:5px;color:inherit;cursor:pointer;font-size:11px;padding:2px 8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar</button>
+        <button type="button" onclick="capClearProp()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:16px;line-height:1;opacity:.8">×</button>
+      </div>
+    </div>
+    <input type="hidden" id="fPessoaId">
+    <input type="hidden" id="fOwner">
+    <div id="capPropDetalhes" style="display:none">
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="fTipo" onchange="toggleConjuge()">
+            <option value="PF">PF — Pessoa Física</option>
+            <option value="Casal">Casal</option>
+            <option value="PJ">PJ — Pessoa Jurídica</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Telefone</label><input type="text" id="fTel" placeholder="(11) 9 0000-0000"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="text" id="fEmail" placeholder="email@exemplo.com"></div>
+      <div id="conjuWrap" style="display:none">
+        <div class="form-row cols-2">
+          <div class="form-group"><label>Nome do cônjuge</label><input type="text" id="fConjuge" placeholder="Nome"></div>
+          <div class="form-group"><label>Tel. cônjuge</label><input type="text" id="fTelConjuge" placeholder="(11) 9 0000-0000"></div>
+        </div>
+        <div class="form-group">
+          <label>Contato principal</label>
+          <select id="fContatoPrincipal">
+            <option value="proprietario">Proprietário</option>
+            <option value="conjuge">Cônjuge</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    </div><!-- /capStep1 -->
+
+    <!-- ════ ETAPA 2 — O imóvel ════ -->
+    <div id="capStep2">
+    <div class="modal-section-title"><span class="cap-step-tag" id="capTag2" style="display:none">Etapa 2 de 2 · </span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>O imóvel</div>
+    <div class="form-row cols-3">
+      <div class="form-group" style="grid-column:span 2"><label>Rua</label><input type="text" id="fRua" placeholder="Nome da rua" onchange="capResolveCond()"></div>
+      <div class="form-group"><label>Número</label><input type="text" id="fNum" placeholder="Nº" onchange="capResolveCond()"></div>
+    </div>
+
+    <!-- Frente A (Tela A.2): cartão de aviso de endereço duplicado em Imóveis -->
+    <div id="capDupCard" class="dup-card"></div>
+
+    <!-- Cartão de resolução do condomínio (base própria → ITBI) -->
+    <div id="capCondCard" class="cap-cond-card" style="display:none">
+      <span class="cap-cond-txt"><span class="cap-cond-src" id="capCondCardSrc"></span><span id="capCondCardNome"></span></span>
+      <div id="capCondCardBtns" style="display:flex;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="capCondConfirmar();return false;">É esse</button>
+        <button class="btn btn-ghost btn-sm" onclick="capCondRejeitar();return false;">Não é</button>
+      </div>
+    </div>
+
+    <!-- Condomínio — busca manual (oculto; aparece na edição ou ao recusar o cartão) -->
+    <div id="capCondManual" style="display:none">
+    <div class="modal-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/></svg>Condomínio</div>
+    <div class="form-group">
+      <label>Buscar condomínio cadastrado</label>
+      <div style="display:flex;gap:6px">
+        <div style="flex:1;position:relative">
+          <input type="text" id="capCondSearch" placeholder="Nome do edifício ou rua..." oninput="capSearchCond(this.value)" autocomplete="off">
+          <div id="capCondDrop" class="pessoa-search-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;max-height:160px;overflow-y:auto"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="capToggleMiniCond();return false;" title="Criar novo condomínio">+</button>
+      </div>
+      <div id="capCondSel" style="display:none;margin-top:6px;padding:5px 10px;background:var(--success);border-radius:6px;font-size:12px;color:#fff;display:flex;align-items:center;gap:8px">
+        <span style="flex:1">✓ Vinculado: <strong id="capCondSelTxt"></strong></span>
+        <button onclick="capClearCond();return false;" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1;opacity:.8">×</button>
+      </div>
+    </div>
+    <div id="capCondMiniForm" style="display:none;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--accent)">Novo condomínio</div>
+      <div class="form-group"><label>Nome *</label><input type="text" id="capCondNome" placeholder="Ex: Barão de Ayuruoca"></div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label>Bairro</label><input type="text" id="capCondBairroNovo" placeholder="Higienópolis" oninput="capCondAutoFill()"></div>
+        <div class="form-group"><label>Tipo</label>
+          <select id="capCondTipo"><option>Apartamento</option><option>Casa</option><option>Cobertura</option><option>Garden</option><option>Duplex</option><option>Comercial</option></select>
+        </div>
+      </div>
+      <div class="form-row cols-3">
+        <div class="form-group" style="grid-column:span 2"><label>Rua</label><input type="text" id="capCondRua" placeholder="Rua Sergipe" oninput="capCondAutoFill()"></div>
+        <div class="form-group"><label>Número</label><input type="text" id="capCondNum" placeholder="327" oninput="capCondAutoFill()"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="capItbiLookup();return false;" style="margin-bottom:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Verificar no ITBI</button>
+      <div id="capItbiInfo" style="display:none;font-size:11px;color:var(--muted);padding:5px 8px;background:var(--surface2);border-radius:6px;margin-bottom:6px"></div>
+    </div>
+    </div><!-- /capCondManual -->
+
+    <input type="hidden" id="fCondominioId">
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Edifício</label><input type="text" id="fImovel" placeholder="Nome do edifício"></div>
+      <div class="form-group"><label>Apto / Complemento</label><input type="text" id="fApto" placeholder="Apto 143"></div>
+      <div class="form-group"><label>Bairro</label><input type="text" id="fBairro" placeholder="Bairro"></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+      <div style="display:flex;flex-direction:column;gap:3px;width:54px"><label style="font-size:12px;color:var(--muted);text-align:center">D</label><input type="number" id="fD" placeholder="0" min="0" style="text-align:center;padding:7px 4px"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;width:54px"><label style="font-size:12px;color:var(--muted);text-align:center">S</label><input type="number" id="fS" placeholder="0" min="0" style="text-align:center;padding:7px 4px"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;width:54px"><label style="font-size:12px;color:var(--muted);text-align:center">V</label><input type="number" id="fV" placeholder="0" min="0" style="text-align:center;padding:7px 4px"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:80px"><label style="font-size:12px;color:var(--muted)">Área (m²)</label><input type="number" id="fArea" placeholder="0" step="0.01" oninput="calcVm2()"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:130px"><label style="font-size:12px;color:var(--muted)">Valor pretendido (R$)</label><input type="text" id="fValor" placeholder="0,00" oninput="fmtCurInput(this);calcVm2()" inputmode="decimal"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:90px"><label style="font-size:12px;color:var(--muted)">Valor/m²</label><input type="text" id="fVm2" readonly style="color:var(--accent);font-weight:600;background:var(--surface2)" placeholder="—"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Tipologia <span class="opc-gear" title="Gerenciar tipologias" onclick="abrirGerenciadorOpcoes('tipologia')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span></label>
+        <select id="fTipologia" data-opcoes="tipologia" onfocus="this.dataset.prev=this.value" onchange="onOpcaoChange(this,'tipologia')"></select>
+      </div>
+      <div class="form-group">
+        <label>Conservação <span class="opc-gear" title="Gerenciar conservação" onclick="abrirGerenciadorOpcoes('conservacao')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span></label>
+        <select id="fConservacao" data-opcoes="conservacao" onfocus="this.dataset.prev=this.value" onchange="onOpcaoChange(this,'conservacao')"></select>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Ocupação</label>
+        <select id="fOcupacao"><option>Ocupado</option><option>Desocupado</option></select>
+      </div>
+      <div class="form-group">
+        <label>Restrição jurídica</label>
+        <select id="fRestricao">
+          <option>Nenhuma</option><option>Penhora</option><option>Hipoteca</option>
+          <option>Inventário</option><option>Divórcio</option>
+        </select>
+      </div>
+    </div>
+    </div><!-- /capStep2 -->
+
+    <!-- ════ EXTRA — só na edição (fora do wizard de criação) ════ -->
+    <div id="capExtra">
+    <!-- Documentos -->
+    <div class="modal-section-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Documentos</div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Cartório</label><input type="text" id="fCartorio" placeholder="Nome do cartório"></div>
+      <div class="form-group"><label>Nº Matrícula</label><input type="text" id="fMatricula" placeholder="Número"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Área registrada (m²)</label><input type="number" id="fAreaReal" placeholder="0" step="0.01"></div>
+      <div class="form-group"><label>Data matrícula</label><input type="date" id="fMatriculaData"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Condomínio mensal (R$)</label><input type="text" id="fCondMensal" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+      <div class="form-group"><label>IPTU anual (R$)</label><input type="text" id="fIPTU" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="modal-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></svg>Pipeline</div>
+    <div class="form-group">
+      <label>Estágio</label>
+      <div class="stage-steps" id="stageSel"></div>
+      <input type="hidden" id="fEstagio" value="prospeccao">
+    </div>
+    <div class="form-group">
+      <label>Próxima ação</label>
+      <input type="text" id="fProxAcao" placeholder="Ex.: agendar 2ª visita, ligar para o proprietário...">
+    </div>
+
+    <!-- 5.1 — Datas & agenda da captação (ordem cronológica) -->
+    <div class="modal-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Datas &amp; agenda</div>
+    <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:130px"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Prospecção</label><input type="date" id="fMarcoProspeccao"></div>
+    </div>
+    <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:130px"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>1ª Visita</label><input type="date" id="fMarcoVisita1"></div>
+      <div style="width:110px"><label>Hora</label><input type="time" id="fHoraVisita1"></div>
+    </div>
+    <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:130px"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Vou apresentar o ACM em<span style="font-weight:400;color:var(--info);text-transform:none;letter-spacing:0">(agenda)</span></label><input type="date" id="fAcmAgendadoData" onchange="updateAcmApresentadoVis()"></div>
+      <div style="width:110px"><label>Hora</label><input type="time" id="fAcmAgendadoHora" onchange="updateAcmApresentadoVis()"></div>
+    </div>
+    <div class="form-group" id="acmApresentadoRow" style="display:none">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:130px"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Já apresentei o ACM em<span style="font-weight:400;color:var(--success);text-transform:none;letter-spacing:0">(real)</span></label><input type="date" id="fMarcoAcm"></div>
+        <div style="width:110px"><label>Hora</label><input type="time" id="fHoraAcm"></div>
+        <button type="button" id="btnAcmApresentado" class="btn btn-ghost btn-sm" onclick="marcarAcmApresentado()" style="white-space:nowrap;align-self:flex-end">✓ Apresentado</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Origem</label>
+      <select id="fOrigem">
+        <option>Captação ativa</option><option>Cliente</option><option>NonStop</option>
+        <option>Sist. Pilar</option><option>Indicação</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Log de atividades</label>
+      <div class="obs-log" id="obsLog"></div>
+      <div class="obs-add-row">
+        <textarea id="fObsNova" placeholder="Adicionar nota..."></textarea>
+        <button class="btn btn-ghost btn-sm" onclick="addObs()" style="white-space:nowrap;align-self:flex-end">+ Reg.</button>
+      </div>
+    </div>
+    </div><!-- /capExtra -->
+
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnDel" onclick="excluirImovel()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btnVerACM" onclick="salvarEAbrirACM()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Ver ACM</button>
+      <button class="btn btn-ghost btn-sm" id="btnCaptacaoPerdida" onclick="openPerdidaModal(editId)" style="display:none;border-color:rgba(239,68,68,.4);color:var(--danger)">Captação perdida</button>
+      <button class="btn btn-ghost btn-sm" id="btnContratoAssinado" onclick="marcarContratoAssinado(editId)" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>Contrato assinado</button>
+      <button class="btn btn-ghost btn-sm" id="btnWizVoltar" onclick="wizGo(1)" style="display:none">← Voltar</button>
+      <button class="btn btn-ghost btn-sm" id="btnCancelar" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnWizProximo" onclick="wizGo(2)" style="display:none">Próximo →</button>
+      <button class="btn btn-primary btn-sm" id="btnSalvar" onclick="salvarImovel()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gerenciador de listas editáveis (Tipologia / Conservação) -->
+<div class="modal-overlay" id="opcOverlay" onclick="fecharGerenciadorOpcoes()" style="z-index:2000">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="opcTitulo">Lista</div>
+      <button class="modal-close" onclick="fecharGerenciadorOpcoes()">×</button>
+    </div>
+    <div id="opcHint" style="font-size:11.5px;color:var(--muted);font-style:italic;margin-bottom:12px"></div>
+    <div id="opcLista"></div>
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <input id="opcNovo" placeholder="Adicionar…" style="flex:1" oninput="opcErrLimpar()" onkeydown="if(event.key==='Enter'){opcAdd();return false;}">
+      <button class="btn btn-primary btn-sm" onclick="opcAdd()" style="white-space:nowrap">+ Adicionar</button>
+    </div>
+    <!-- Aviso de validação junto do campo (padrão do sistema) -->
+    <div class="field-error" id="opcErrAdd" role="alert"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="fecharGerenciadorOpcoes()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Captação Perdida (4d.3) ── -->
+<div class="modal-overlay" id="perdidaOverlay" onclick="closePerdidaModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="modal-hdr"><div class="modal-title">Marcar captação como perdida</div></div>
+    <div id="perdidaImovelInfo" class="ds-meta" style="margin-bottom:14px"></div>
+    <div class="form-group">
+      <label>Data da perda</label>
+      <input type="date" id="fPerdidaData">
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <select id="fPerdidaMotivo" onchange="onPerdidaMotivoChange()">
+        <option value="Proprietário desistiu de vender">Proprietário desistiu de vender</option>
+        <option value="Fechou com outro corretor">Fechou com outro corretor</option>
+        <option value="Preço fora da realidade">Preço fora da realidade</option>
+        <option value="Sem retorno do proprietário">Sem retorno do proprietário</option>
+        <option value="Não quis exclusividade (segue à venda)">Não quis exclusividade (segue à venda)</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>O imóvel na Carteira fica como</label>
+      <div class="status-seg" id="perdidaDestinoSeg">
+        <button type="button" class="status-opt" data-v="aberto" onclick="setPerdidaDestino('aberto')">Aberto — sigo anunciando</button>
+        <button type="button" class="status-opt" data-v="terceiros" onclick="setPerdidaDestino('terceiros')">Terceiros — outro corretor</button>
+      </div>
+      <input type="hidden" id="fPerdidaDestino">
+      <div class="ds-meta" style="margin-top:6px">O imóvel fica na Carteira e o vínculo com a captação perdida guarda o histórico.</div>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-actions-left"></div>
+      <button class="btn btn-ghost btn-sm" onclick="closePerdidaModal()">Cancelar</button>
+      <button class="btn btn-sm" id="btnConfirmarPerdida" onclick="confirmarPerdida()" style="background:var(--danger);border-color:var(--danger);color:#fff">Confirmar perda</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Venda Perdida (13.2) ── -->
+<div class="modal-overlay" id="vendaPerdidaOverlay" onclick="closeVendaPerdida()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="modal-hdr"><div class="modal-title">Marcar venda como perdida</div></div>
+    <div id="vendaPerdidaInfo" class="ds-meta" style="margin-bottom:14px"></div>
+    <div class="form-group">
+      <label>Data da perda</label>
+      <input type="date" id="fVPData">
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <select id="fVPMotivo">
+        <option value="Comprou com outro corretor">Comprou com outro corretor</option>
+        <option value="Comprador desistiu">Comprador desistiu</option>
+        <option value="Não conseguiu financiamento">Não conseguiu financiamento</option>
+        <option value="Imóvel vendido a terceiros">Imóvel vendido a terceiros</option>
+        <option value="Sem retorno do comprador">Sem retorno do comprador</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Observação (opcional)</label>
+      <input type="text" id="fVPObs" placeholder="Detalhe...">
+    </div>
+    <div class="modal-actions">
+      <div class="modal-actions-left"></div>
+      <button class="btn btn-ghost btn-sm" onclick="closeVendaPerdida()">Cancelar</button>
+      <button class="btn btn-sm" onclick="confirmarVendaPerdida()" style="background:var(--danger);border-color:var(--danger);color:#fff">Confirmar perda</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Renovar Gestão (4d.2) ── -->
+<div class="modal-overlay" id="renovarOverlay" onclick="closeRenovarModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-hdr"><div class="modal-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Renovar gestão</div></div>
+    <div id="renovarImovelInfo" class="ds-meta" style="margin-bottom:14px"></div>
+    <div class="form-group">
+      <label>Data de assinatura do novo contrato</label>
+      <input type="date" id="fRenovarData" onchange="calcRenovarFim()">
+    </div>
+    <div class="form-group">
+      <label>Prazo (dias)</label>
+      <input type="number" id="fRenovarPrazo" value="180" min="1" onchange="calcRenovarFim()">
+    </div>
+    <div class="ds-meta" style="margin-bottom:8px">Novo término: <b id="renovarFimPreview" style="color:var(--text)">—</b> · conta a partir da data acima.</div>
+    <div class="modal-actions">
+      <div class="modal-actions-left"></div>
+      <button class="btn btn-ghost btn-sm" onclick="closeRenovarModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarRenovacao()">Renovar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Condomínio ── -->
+<div class="modal-overlay" id="condOverlay" onclick="closeCondModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:560px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="condModalTitulo">Novo Condomínio</div>
+      <button class="modal-close" onclick="closeCondModal()">×</button>
+    </div>
+    <div class="form-group"><label>Nome *</label><input type="text" id="cNome" placeholder="Ex: Edifício Cumaru SP Golf"></div>
+    <div class="form-row cols-3">
+      <div class="form-group" style="grid-column:span 2"><label>Rua</label><input type="text" id="cRua" placeholder="Avenida Nossa Senhora do Sabará"></div>
+      <div class="form-group"><label>Número</label><input type="text" id="cNum" placeholder="221"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Bairro</label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="cBairro" placeholder="Jardim Marajoara" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="sugerirBairroCond()" style="flex-shrink:0;white-space:nowrap;font-size:11px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Sugerir</button>
+        </div>
+      </div>
+      <div class="form-group"><label>Tipo</label><select id="cTipo"><option>Residencial</option><option>Comercial</option><option>Misto</option></select></div>
+    </div>
+    <div class="form-group">
+      <label>Fotos do condomínio</label>
+      <div class="drive-box">
+        <div class="drive-row">
+          <input type="text" id="condFotosPasta" placeholder="Link da pasta do Google Drive com as fotos...">
+          <button class="btn btn-primary btn-sm" type="button" onclick="buscarFotosDaPasta('condominios')">Buscar fotos</button>
+        </div>
+        <div class="drive-toolbar">
+          <div class="drive-toolbar-lbl">Fotos <span id="condFotosCount">0</span></div>
+          <div class="drive-hint">Arraste para reordenar — a primeira é a capa</div>
+        </div>
+        <div class="drive-preview" id="condFotosPreview"></div>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Ano de construção</label><input type="text" id="cAno" placeholder="2023"></div>
+      <div class="form-group"><label>Construtora</label><input type="text" id="cConstrutora" placeholder="Nome"></div>
+    </div>
+    <div class="form-group"><label>Próximo ao metrô</label><input type="text" id="cMetro" placeholder="Ex: Estação Adolfo Pinheiro"></div>
+    <div class="form-group"><label>Link Quinto Andar</label><input type="text" id="cUrlQuinto" placeholder="https://..."></div>
+    <div class="form-group"><label>Link ImóvelWeb</label><input type="text" id="cUrlImovelWeb" placeholder="https://..."></div>
+    <div class="form-group"><label>Link Loft</label><input type="text" id="cUrlLoft" placeholder="https://..."></div>
+    <div class="form-group"><label>Observações</label><textarea id="cObs" rows="3" placeholder="Descrição do condomínio, infraestrutura..."></textarea></div>
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnCondDel" onclick="excluirCond()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeCondModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarCond()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Ficha Condomínio ── -->
+<div class="cond-ficha-overlay" id="condFichaOverlay">
+  <div class="cond-ficha-hdr">
+    <button class="btn btn-ghost btn-sm" onclick="closeCondFicha()" style="flex-shrink:0">← Voltar</button>
+    <div class="cond-ficha-titulo" id="condFichaTitulo">—</div>
+    <button class="btn btn-ghost btn-sm" onclick="editarCondDaFicha()" style="flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar</button>
+  </div>
+  <div class="cond-ficha-body" id="condFichaBody"></div>
+</div>
+
+<!-- ── Galeria cheia da ficha do Condomínio (item 10.6, Etapa 1) ── -->
+<div class="cond-galgrid-overlay" id="condGalGridOverlay" onclick="if(event.target===this)condCloseGalGrid()">
+  <div class="cond-galgrid-hdr">
+    <div class="gt" id="condGalGridTitle">Fotos</div>
+    <button class="cond-galgrid-close" onclick="condCloseGalGrid()" aria-label="Fechar">&times;</button>
+  </div>
+  <div class="cond-galgrid" id="condGalGrid"></div>
+</div>
+
+<!-- ── Imóveis Carteira — Ficha View (read-only) ── -->
+<div class="carteira-view-overlay" id="carteiraViewOverlay">
+  <div class="carteira-view-hdr">
+    <button class="btn btn-ghost btn-sm" onclick="closeCarteiraView()" style="flex-shrink:0">← Voltar</button>
+    <div class="carteira-view-titulo" id="carteiraViewTitulo">—</div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn btn-ghost btn-sm" onclick="inserirNoPipeline()" style="font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>+ Pipeline</button>
+      <button class="btn btn-ghost btn-sm" onclick="editarCarteiraView()" style="font-size:12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar</button>
+    </div>
+  </div>
+  <div class="carteira-view-body" id="carteiraViewBody"></div>
+</div>
+
+<!-- ── Imóveis Carteira — Ficha Edit ── -->
+<div class="carteira-overlay" id="carteiraOverlay">
+  <div class="carteira-ficha-hdr">
+    <button class="btn btn-ghost btn-sm" onclick="closeCarteiraFicha()" style="white-space:nowrap;flex-shrink:0">← Voltar</button>
+    <div class="carteira-ficha-info">
+      <div class="carteira-ficha-titulo" id="carteiraFichaTitulo">Novo Imóvel</div>
+      <div class="carteira-ficha-sub" id="carteiraFichaSub"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn btn-danger btn-sm" id="btnCarteiraExcluir" onclick="excluirCarteira()" style="display:none;font-size:12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarCarteira()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+  <div class="carteira-tabs">
+    <div class="carteira-tab active" id="ctab-pessoas"  onclick="showCarteiraTab('pessoas')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Cadastro</div>
+    <div class="carteira-tab"        id="ctab-imovel"   onclick="showCarteiraTab('imovel')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></svg>Detalhes</div>
+    <div class="carteira-tab"        id="ctab-fotos"    onclick="showCarteiraTab('fotos')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Fotos</div>
+    <div class="carteira-tab"        id="ctab-anuncios" onclick="showCarteiraTab('anuncios')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Anúncios</div>
+  </div>
+  <div class="carteira-tab-body">
+
+    <!-- Pessoas -->
+    <div class="carteira-tab-view active" id="ctv-pessoas">
+      <div style="max-width:960px">
+        <div class="carteira-form-grid">
+          <div class="form-group span-4"><label>Rua</label><input type="text" id="cfRua" placeholder="Ex: Rua Rio de Janeiro"></div>
+          <div class="form-group span-1"><label>Número</label><input type="text" id="cfNum" placeholder="33"></div>
+          <div class="form-group span-1"><label>Complemento</label><input type="text" id="cfCompl" placeholder="Apto 2"></div>
+          <div class="form-group span-1"><label>CEP</label><input type="text" id="cfCep" placeholder="01234-567"></div>
+          <div class="form-group span-2"><label>Bairro</label><input type="text" id="cfBairro" placeholder="Higienópolis"></div>
+          <div class="form-group span-2"><label>Condomínio (base cadastrada)</label><select id="cfCondominio"></select></div>
+          <div class="form-group span-1"><label>Código</label><input type="text" id="cfCodigo" placeholder="Ex: PD613">
+            <!-- Frente A (Tela A.3): código PD repetido — aviso junto do campo -->
+            <div class="field-error" id="cfCodigoErr"></div>
+          </div>
+        </div>
+        <!-- Frente A (Tela A.3): endereço já existente em Imóveis — cartão de aviso -->
+        <div id="cfDupEndCard" class="dup-card"></div>
+      </div>
+      <div id="carteiraFichaPessoas" style="max-width:680px"></div>
+    </div>
+
+    <!-- Detalhes (características, valores, status) -->
+    <div class="carteira-tab-view" id="ctv-imovel">
+      <div style="max-width:960px">
+        <div class="carteira-form-grid">
+          <div class="form-group span-3"><label>Tipologia <span class="opc-gear" title="Gerenciar tipologias" onclick="abrirGerenciadorOpcoes('tipologia')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span></label>
+            <select id="cfTipo" data-opcoes="tipologia" onfocus="this.dataset.prev=this.value" onchange="onOpcaoChange(this,'tipologia')"></select>
+          </div>
+          <div class="form-group span-3"><label>Conservação <span class="opc-gear" title="Gerenciar conservação" onclick="abrirGerenciadorOpcoes('conservacao')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span></label>
+            <select id="cfConservacao" data-opcoes="conservacao" onfocus="this.dataset.prev=this.value" onchange="onOpcaoChange(this,'conservacao')"></select>
+          </div>
+          <div class="form-group span-3"><label>Valor venda (R$)</label><input type="text" id="cfValorVenda" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+          <div class="form-group span-3"><label>Valor aluguel (R$)</label><input type="text" id="cfValorAlug" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+          <div class="form-group span-3"><label>Área útil (m²)</label><input type="number" id="cfAreaUtil" placeholder="0" step="0.01" min="0"></div>
+          <div class="form-group span-3"><label>Área total (m²)</label><input type="number" id="cfAreaTotal" placeholder="0" step="0.01" min="0"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="display:flex;flex-direction:column;gap:3px;width:60px"><label style="font-size:12px;color:var(--muted);text-align:center">Quartos</label><input type="number" id="cfQuartos" min="0" style="text-align:center"></div>
+          <div style="display:flex;flex-direction:column;gap:3px;width:60px"><label style="font-size:12px;color:var(--muted);text-align:center">Suítes</label><input type="number" id="cfSuites" min="0" style="text-align:center"></div>
+          <div style="display:flex;flex-direction:column;gap:3px;width:70px"><label style="font-size:12px;color:var(--muted);text-align:center">Banheiros</label><input type="number" id="cfBanhos" min="0" style="text-align:center"></div>
+          <div style="display:flex;flex-direction:column;gap:3px;width:60px"><label style="font-size:12px;color:var(--muted);text-align:center">Vagas</label><input type="number" id="cfVagas" min="0" style="text-align:center"></div>
+          <div style="display:flex;flex-direction:column;gap:3px;width:80px"><label style="font-size:12px;color:var(--muted)">Andar</label><input type="text" id="cfAndar" placeholder="2"></div>
+        </div>
+        <div class="carteira-form-grid">
+          <div class="form-group span-3"><label>IPTU mensal (R$)</label><input type="text" id="cfIptu" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+          <div class="form-group span-3"><label>SQL (número IPTU)</label><input type="text" id="cfSql" placeholder="000.000.0000.0"></div>
+          <div class="form-group span-3"><label>Matrícula Nº</label><input type="text" id="cfMatricula" placeholder="Número"></div>
+          <div class="form-group span-3"><label>CRI (cartório)</label><input type="text" id="cfCri" placeholder="Ex: 4º CRI"></div>
+          <div class="form-group span-3"><label>Taxa condomínio (R$)</label><input type="text" id="cfCond" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+          <div class="form-group span-3"><label>Comissão (%)</label><input type="number" id="cfComissao" value="6" step="0.5" min="0" max="100"></div>
+          <div class="form-group span-3"><label>Origem</label>
+            <select id="cfOrigem">
+              <option value="">— Não informado —</option>
+              <option>Aberto sem gestão</option>
+              <option>Corretor parceiro</option>
+            </select>
+          </div>
+          <div class="form-group span-3"><label>Anunciado em <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(data real de anúncio)</span></label><input type="date" id="cfAnunciadoEm"></div>
+        </div>
+        <div class="form-group">
+          <label>Status do imóvel</label>
+          <div class="status-seg" id="cfStatusSeg">
+            <button type="button" class="status-opt" data-v="a_classificar" onclick="setCfStatus('a_classificar')">A classificar</button>
+            <button type="button" class="status-opt" data-v="exclusivo" onclick="setCfStatus('exclusivo')">Exclusivo</button>
+            <button type="button" class="status-opt" data-v="aberto" onclick="setCfStatus('aberto')">Aberto</button>
+            <button type="button" class="status-opt" data-v="terceiros" onclick="setCfStatus('terceiros')">Terceiros</button>
+          </div>
+          <input type="hidden" id="cfStatus">
+          <input type="hidden" id="cfMotivoInativo">
+          <div id="cfInativoBox" style="margin-top:10px"></div>
+        </div>
+        <div class="toggle-row" style="margin-bottom:20px"><span class="toggle-label">Lançamento</span><label class="toggle-switch"><input type="checkbox" id="cfLancamento"><span class="toggle-slider"></span></label></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px">Características</div>
+        <div id="cfCaracteristicas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;margin-bottom:20px"></div>
+        <div class="form-group"><label>Anotações internas</label><textarea id="cfAnotacoes" rows="4" placeholder="Notas privadas sobre o imóvel..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- Fotos -->
+    <div class="carteira-tab-view" id="ctv-fotos">
+      <div style="max-width:760px">
+        <div class="drive-box">
+          <div class="drive-row">
+            <input type="text" id="cfFotosPasta" placeholder="Link da pasta do Google Drive com as fotos...">
+            <button class="btn btn-primary btn-sm" onclick="buscarFotosDaPasta('carteira')">Buscar fotos</button>
+          </div>
+          <div class="drive-toolbar">
+            <div class="drive-toolbar-lbl">Fotos do imóvel <span id="cfFotosCount">0</span></div>
+            <div class="drive-hint">Arraste para reordenar — a primeira é a capa</div>
+          </div>
+          <div class="drive-preview" id="cfFotosPreview"></div>
+        </div>
+        <div class="form-group" style="margin-top:18px"><label>Vídeos e documentos <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(link do Drive, YouTube, etc.)</span></label><input type="text" id="cfDrive" placeholder="https://drive.google.com/... ou https://youtube.com/..."></div>
+      </div>
+    </div>
+
+    <!-- Anúncios -->
+    <div class="carteira-tab-view" id="ctv-anuncios">
+      <div style="max-width:560px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Links para os anúncios publicados em cada canal.</p>
+        <div class="anuncio-row">
+          <span style="font-size:13px;font-weight:600;min-width:110px;flex-shrink:0">Pilar</span>
+          <input type="text" id="cfAnuncioPilar" placeholder="https://pilar.app/imovel/..." style="flex:1">
+        </div>
+        <div class="anuncio-row">
+          <span style="font-size:13px;font-weight:600;min-width:110px;flex-shrink:0">NonStop</span>
+          <input type="text" id="cfAnuncioNonStop" placeholder="https://nonstop.com/..." style="flex:1">
+        </div>
+        <div id="cfAnunciosExtra"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addAnuncioExtra()" style="margin-top:12px;font-size:12px">+ Adicionar canal</button>
+      </div>
+    </div>
+
+  </div><!-- /carteira-tab-body -->
+</div><!-- /carteiraOverlay -->
+
+<!-- ── Modal Inativar Imóvel (status "Inativo", motivo obrigatório) ── -->
+<div class="modal-overlay" id="inativarOverlay" onclick="closeInativarModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:360px">
+    <div class="modal-hdr">
+      <div class="modal-title">Inativar imóvel</div>
+      <button class="modal-close" onclick="closeInativarModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <select id="fInativoMotivo">
+        <option>Proprietário desistiu da venda</option>
+        <option>Foi para outra imobiliária</option>
+        <option>Alugado por conta própria</option>
+        <option>Outro</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeInativarModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarInativar()">Inativar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Características Settings Modal ── -->
+<div class="modal-overlay" id="caractSettingsOverlay" onclick="closeCaractSettings()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+    <div class="modal-hdr">
+      <div class="modal-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Características</div>
+      <button class="modal-close" onclick="closeCaractSettings()">×</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Estes itens aparecem como checkboxes em todos os imóveis.</p>
+    <div id="caractSettingsList" style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px;max-height:300px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="novaCaractInput" placeholder="Nova característica..." style="flex:1" onkeydown="if(event.key==='Enter')addCaract()">
+      <button class="btn btn-primary btn-sm" onclick="addCaract()">+ Adicionar</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeCaractSettings()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Gestão Exclusiva ── -->
+<div class="modal-overlay" id="gestaoOverlay" onclick="closeGestaoModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="gestaoModalTitulo">Nova Gestão Exclusiva</div>
+      <button class="modal-close" onclick="closeGestaoModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label>Imóvel *</label>
+      <select id="fGestaoImovelId" onchange="onGestaoImovelChange()"></select>
+    </div>
+    <div id="fGestaoImovelInfo" style="display:none;font-size:12px;color:var(--muted);background:var(--surface2);border-radius:7px;padding:7px 10px;margin-bottom:10px"></div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Data de início *</label><input type="date" id="fGestaoInicio" oninput="calcGestaoFim()"></div>
+      <div class="form-group"><label>Prazo (dias)</label><input type="number" id="fGestaoPrazo" value="180" oninput="calcGestaoFim()"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Data de término</label><input type="date" id="fGestaoFim"></div>
+      <div class="form-group"><label>Comissão (%)</label><input type="number" id="fGestaoComissao" value="6" step="0.5" min="0"></div>
+    </div>
+    <div class="form-group"><label>Revisão de preço a cada (dias)</label><input type="number" id="fGestaoRevisaoFreq" value="60"></div>
+    <div class="form-group"><label>Observações</label><textarea id="fGestaoObs" rows="3" placeholder="Notas sobre o contrato..."></textarea></div>
+    <div class="form-group"><label>Link do contrato</label><input type="url" id="fGestaoLinkContrato" placeholder="https://docusign.com/... ou link do Drive"></div>
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnGestaoDel" onclick="excluirGestao()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeGestaoModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarGestao()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Histórico de Preço ── -->
+<div class="modal-overlay" id="histPrecoOverlay" onclick="closeHistPrecoModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="histPrecoModalTitulo">Registrar Preço</div>
+      <button class="modal-close" onclick="closeHistPrecoModal()">×</button>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Data *</label><input type="date" id="fHistPrecoData"></div>
+      <div class="form-group"><label>Valor (R$) *</label><input type="text" id="fHistPrecoValor" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+    </div>
+    <div class="form-group"><label>Observação</label><input type="text" id="fHistPrecoObs" placeholder="Ex: Redução negociada com proprietário"></div>
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnHistPrecoDel" onclick="excluirHistPreco()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeHistPrecoModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarHistPreco()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modais legados de Lead/Visita (leadOverlay/visitaOverlay) removidos em 25/07/2026 — código morto (D-1 da reforma Lead+Imobiliárias). -->
+
+<!-- ── Modal Ficha de Visita (Fatia 4b) ── -->
+<style>
+/* Ficha do lead (13.1b) */
+#visFichaOverlay{z-index:1100}
+#leadFichaOverlay .modal-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+#leadFichaOverlay .modal-hdr .modal-title{margin-bottom:0;flex:0 1 auto}
+#leadFichaOverlay .modal-hdr .lead-badge{flex-shrink:0}
+#leadFichaOverlay .modal-hdr .modal-close{margin-left:auto;flex-shrink:0}
+.lf-wa{display:inline-flex;align-items:center;gap:5px;background:rgba(37,211,102,.14);border:1px solid #25d366;color:#25d366;border-radius:16px;padding:4px 11px;font-size:11.5px;font-weight:700;text-decoration:none;cursor:pointer;flex-shrink:0;white-space:nowrap}
+.lf-collapse-h{display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:700}
+.lf-collapse-h .ds-meta{margin-left:auto;font-weight:400}
+.lf-sec{margin-top:6px;padding-top:12px;border-top:1px dashed var(--border)}
+.lf-sec-h{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.lf-sec-h button{margin-left:auto}
+.lf-motivos{display:flex;flex-wrap:wrap;gap:7px}
+.lf-mot{font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:5px 11px;cursor:pointer}
+.lf-mot.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+.lf-tar{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:7px}
+.lf-tar-chk{width:16px;height:16px;border:1.5px solid var(--muted);border-radius:4px;flex-shrink:0;margin-top:2px;cursor:pointer}
+.lf-tar-chk.on{background:var(--success);border-color:var(--success)}
+.lf-tar-body{flex:1}
+.lf-tar-txt{font-size:13px}
+.lf-tar.done .lf-tar-txt{text-decoration:line-through;color:var(--muted)}
+.lf-tar-when{font-size:11.5px;color:var(--muted);margin-top:2px}
+.lf-tar-when.venc{color:var(--warn);font-weight:700}
+.lf-tar-del{cursor:pointer;opacity:.55;font-size:12px}
+.lf-tar-del:hover{opacity:1}
+.lf-tar-add{background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:9px;margin-bottom:7px}
+.lf-tar-add input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:7px 9px;font-size:13px;margin-bottom:6px}
+.lf-tar-add-row{display:flex;gap:6px;align-items:center}
+.lf-tar-add-row input{margin-bottom:0}
+.lf-vis{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:7px;cursor:pointer}
+.lf-vis-top{font-size:13px}
+</style>
+<div class="modal-overlay" id="visFichaOverlay" onclick="closeVisitaFicha()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="visFichaTitulo">Nova Visita</div>
+      <button class="modal-close" onclick="closeVisitaFicha()">×</button>
+    </div>
+    <div class="form-group"><label>Data da visita *</label><input type="date" id="fVisData"><span class="ds-meta" style="margin-left:8px">vale para todos os imóveis do dia</span></div>
+
+    <div class="form-group">
+      <label>Comprador(es)</label>
+      <div id="visCompradorChips"></div>
+      <input type="text" id="fVisCompradorBusca" placeholder="Buscar contato..." oninput="visBuscarComprador()" autocomplete="off">
+      <div id="visCompradorDrop" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;margin-top:2px"></div>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="visToggleNovoComprador()">+ novo contato</button>
+      <div id="visNovoCompBox" style="display:none;margin-top:6px;padding:8px;background:var(--surface2);border-radius:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:600">Novo contato</span>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" onclick="visToggleCompCompleto()">+ Cadastro completo</button>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group" style="margin:0"><input type="text" id="fVisNovoCompNome" placeholder="Nome"></div>
+          <div class="form-group" style="margin:0"><input type="text" id="fVisNovoCompTel" data-mask="tel" placeholder="Telefone"></div>
+        </div>
+        <div id="visCompCompletoBox" style="display:none;margin-top:6px">
+          <div class="form-row cols-2">
+            <div class="form-group" style="margin:0"><input type="text" id="fVisNovoCompEmail" data-mask="email" placeholder="E-mail"></div>
+            <div class="form-group" style="margin:0"><input type="text" id="fVisNovoCompEmpresa" placeholder="Empresa"></div>
+          </div>
+          <div class="form-group" style="margin:6px 0 0"><input type="text" id="fVisNovoCompObs" placeholder="Observações"></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="margin-top:6px" onclick="visCriarComprador()">Salvar contato</button>
+      </div>
+    </div>
+
+    <div class="form-group"><label>Via</label>
+      <select id="fVisVia" onchange="toggleVisParceiro()">
+        <option value="direto">Direto</option>
+        <option value="parceiro">Corretor parceiro</option>
+      </select>
+    </div>
+    <div class="form-group" id="visParceiroBox" style="display:none">
+      <label>Corretor parceiro</label>
+      <div id="visParceiroSel" style="display:none;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <span id="visParceiroSelTxt" style="flex:1;font-size:13px"></span>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="visClearParceiro()">trocar</button>
+      </div>
+      <input type="text" id="fVisParceiroBusca" placeholder="Buscar corretor..." oninput="visBuscarParceiro()" autocomplete="off">
+      <div id="visParceiroDrop" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;margin-top:2px"></div>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="visToggleNovoParceiro()">+ novo corretor</button>
+      <div id="visNovoParcBox" style="display:none;margin-top:6px;padding:8px;background:var(--surface2);border-radius:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:600">Novo corretor</span>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" onclick="visToggleParcCompleto()">+ Cadastro completo</button>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group" style="margin:0"><input type="text" id="fVisNovoParcNome" placeholder="Nome"></div>
+          <div class="form-group" style="margin:0"><input type="text" id="fVisNovoParcTel" data-mask="tel" placeholder="Telefone"></div>
+        </div>
+        <div id="visParcCompletoBox" style="display:none;margin-top:6px">
+          <div class="form-row cols-2">
+            <div class="form-group" style="margin:0"><input type="text" id="fVisNovoParcEmail" data-mask="email" placeholder="E-mail"></div>
+            <div class="form-group" style="margin:0"><input type="text" id="fVisNovoParcEmpresa" placeholder="Imobiliária"></div>
+          </div>
+          <div class="form-group" style="margin:6px 0 0"><input type="text" id="fVisNovoParcObs" placeholder="Observações"></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="margin-top:6px" onclick="visCriarParceiro()">Salvar corretor</button>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:14px 0 8px;padding-top:12px;display:flex;align-items:center;justify-content:space-between">
+      <label style="margin:0">Imóveis visitados</label>
+      <button type="button" id="btnVisAddImovel" class="btn btn-ghost btn-sm" onclick="visAddBlock()">+ Adicionar imóvel</button>
+    </div>
+    <div id="visImoveisList"></div>
+
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnVisFichaDel" onclick="excluirVisitaFicha()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeVisitaFicha()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarVisitaFicha()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Lead (Fatia 4c.2) ── -->
+<div class="modal-overlay" id="leadFichaOverlay" onclick="closeLeadFicha()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="lfTitulo">Novo lead</div>
+      <a id="lfWhats" class="lf-wa" target="_blank" rel="noopener" title="Abrir conversa no WhatsApp" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>WhatsApp</a>
+      <span id="lfStatusBadge" class="lead-badge" style="display:none"></span>
+      <button class="modal-close" onclick="closeLeadFicha()">×</button>
+    </div>
+
+    <div id="lfDadosHdr" class="lf-collapse-h" style="display:none" onclick="lfToggleDados()">
+      <span id="lfDadosCaret">▸</span><span>Dados do lead</span><span id="lfDadosResumo" class="ds-meta"></span>
+    </div>
+
+    <div id="lfDadosBody">
+    <div class="form-group"><label>Imóvel *</label>
+      <div id="lfImovelSelBox" class="lf-sel" style="display:none"><span id="lfImovel">—</span><button type="button" class="btn btn-ghost btn-sm" onclick="lfClearImovel()">trocar</button></div>
+      <input type="text" id="fLfImovelBusca" placeholder="Buscar por código ou rua..." oninput="lfBuscarImovel()" autocomplete="off">
+      <div id="lfImovelDrop" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;margin-top:2px"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Interessado *</label>
+      <div id="lfPessoaSel" class="lf-sel" style="display:none"><span id="lfPessoaSelTxt"></span><button type="button" class="btn btn-ghost btn-sm" onclick="lfClearPessoa()">trocar</button></div>
+      <input type="text" id="fLfPessoaBusca" placeholder="Buscar contato pelo nome..." oninput="lfBuscarPessoa()" autocomplete="off">
+      <div id="lfPessoaDrop" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;margin-top:2px"></div>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="lfToggleNovaPessoa()">+ novo contato</button>
+      <div id="lfNovaPessoaBox" style="display:none;margin-top:6px;padding:8px;background:var(--surface2);border-radius:8px">
+        <div class="form-row cols-2">
+          <div class="form-group" style="margin:0"><input type="text" id="fLfNovaNome" placeholder="Nome"></div>
+          <div class="form-group" style="margin:0"><input type="text" id="fLfNovaTel" data-mask="tel" placeholder="Telefone"></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="margin-top:6px" onclick="lfCriarPessoa()">Salvar contato</button>
+      </div>
+    </div>
+
+    <div class="form-group"><label>Origem</label>
+      <select id="fLfOrigem" onchange="toggleLfParceiro()"><option value="direto">Direto</option><option value="parceiro">Corretor parceiro</option></select>
+    </div>
+    <div class="form-group" id="lfParceiroBox" style="display:none">
+      <label>Corretor parceiro</label>
+      <div id="lfParceiroSel" class="lf-sel" style="display:none"><span id="lfParceiroSelTxt"></span><button type="button" class="btn btn-ghost btn-sm" onclick="lfClearParceiro()">trocar</button></div>
+      <input type="text" id="fLfParceiroBusca" placeholder="Buscar corretor..." oninput="lfBuscarParceiro()" autocomplete="off">
+      <div id="lfParceiroDrop" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;margin-top:2px"></div>
+    </div>
+
+    <div class="form-group"><label>Status</label><div class="vis-pills" id="lfStatusPills"></div></div>
+    <div class="form-group"><label>Feedback</label><textarea id="lfFeedback" rows="2" placeholder="O que o interessado disse..."></textarea></div>
+    <div class="form-group"><label>Próximo passo</label><input type="text" id="lfProximo" placeholder="Follow-up (vira tarefa no Dia)"></div>
+    </div><!-- /lfDadosBody -->
+
+    <div id="lfAtividades" style="display:none">
+      <div class="lf-sec">
+        <div class="lf-sec-h"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tarefas</span><button type="button" class="btn btn-ghost btn-sm" onclick="lfNovaTarefa()">+ tarefa</button></div>
+        <div id="lfTarefasList"></div>
+      </div>
+      <div class="lf-sec">
+        <div class="lf-sec-h"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Visitas</span><button type="button" class="btn btn-ghost btn-sm" onclick="lfAgendarVisita()">+ agendar</button></div>
+        <div id="lfVisitasList"></div>
+      </div>
+      <div class="lf-sec">
+        <div class="lf-sec-h"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Notas</span></div>
+        <textarea id="lfAnotacoes" rows="3" placeholder="Anotações sobre o lead..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-ghost btn-sm" id="btnLfVenda" onclick="lfIniciarVenda()" style="display:none;color:var(--success);border-color:var(--success)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Iniciar venda</button>
+        <button class="btn btn-ghost btn-sm" id="btnLfArquivar" onclick="lfAbrirArquivar()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Arquivar</button>
+        <button class="btn btn-danger btn-sm" id="btnLfDel" onclick="excluirLeadFicha()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeLeadFicha()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarLeadFicha()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Arquivar lead (13.1b) ── -->
+<div class="modal-overlay" id="lfArqOverlay" onclick="lfFecharArquivar()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-hdr">
+      <div class="modal-title">Arquivar lead — <span id="lfArqNome"></span></div>
+      <button class="modal-close" onclick="lfFecharArquivar()">×</button>
+    </div>
+    <div class="form-group"><label>Motivo</label><div class="lf-motivos" id="lfArqMotivos"></div></div>
+    <div class="form-group"><label>Observação (opcional)</label><textarea id="lfArqObs" rows="2" placeholder="Detalhe livre, do seu jeito..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="lfFecharArquivar()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="lfConfirmarArquivar()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Arquivar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Proposta ── -->
+<div class="modal-overlay" id="propostaOverlay" onclick="closePropostaModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="propostaModalTitulo">Nova Proposta</div>
+      <button class="modal-close" onclick="closePropostaModal()">×</button>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Data *</label><input type="date" id="fPropostaData"></div>
+      <div class="form-group"><label>Valor total (R$) *</label><input type="text" id="fPropostaValor" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Tipo</label>
+        <select id="fPropostaTipo" onchange="togglePropostaObs()">
+          <option value="a_vista">À vista</option>
+          <option value="financiamento">Financiamento</option>
+          <option value="consorcio">Consórcio</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Status</label>
+        <select id="fPropostaStatus">
+          <option value="em_analise">Em análise</option>
+          <option value="recusada">Recusada</option>
+          <option value="aceita">Aceita</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" id="propostaObsBox">
+      <label>Observações</label>
+      <textarea id="fPropostaObs" rows="2" placeholder="Condições do financiamento/consórcio, banco, prazo..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnPropostaDel" onclick="excluirProposta()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closePropostaModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarProposta()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Despesa ── -->
+<div class="modal-overlay" id="despOverlay" onclick="closeDespModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="despModalTitulo">Nova Despesa</div>
+      <button class="modal-close" onclick="closeDespModal()">×</button>
+    </div>
+    <div class="form-group"><label>Descrição *</label><input type="text" id="fDespDesc" placeholder="Ex: Fotografia profissional"></div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Valor (R$)</label><input type="text" id="fDespValor" placeholder="0,00" oninput="fmtCurInput(this)" inputmode="decimal"></div>
+      <div class="form-group"><label>Data</label><input type="date" id="fDespData"></div>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-actions-left">
+        <button class="btn btn-danger btn-sm" id="btnDespDel" onclick="excluirDesp()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Excluir</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeDespModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarDesp()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ACM Builder Overlay ── -->
+<div class="acm-overlay" id="acmOverlay">
+  <div class="acm-hdr">
+    <button class="btn btn-ghost btn-sm" onclick="closeACMBuilder()" style="white-space:nowrap;flex-shrink:0">← Voltar</button>
+    <div class="acm-hdr-info">
+      <div class="acm-hdr-title" id="acmHdrTitle">ACM</div>
+      <div class="acm-hdr-sub" id="acmHdrSub"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn btn-ghost btn-sm" onclick="exportACMHtml()" style="font-size:12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Exportar</button>
+      <button class="btn btn-primary btn-sm" id="acmSaveBtn" onclick="saveACMBtn()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar</button>
+    </div>
+  </div>
+  <div class="acm-body" id="acmBody">
+    <div class="loading"><div class="spinner"></div> Carregando...</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.3/Sortable.min.js"></script>
+<script src="js/supabase.js?v=20260706c"></script>
+<script src="js/auth.js?v=20260706c"></script>
+<script src="js/masks.js?v=20260729a"></script>
+<script src="js/listas.js?v=20260728a"></script>
+<script src="js/imoveis/core.js?v=20260802a"></script>
+<script src="js/imoveis/garimpo.js?v=20260802a"></script>
+<script src="js/imoveis/condominios.js?v=20260802a"></script>
+<script src="js/imoveis/vendas.js?v=20260706c"></script>
+<script src="js/imoveis/carteira.js?v=20260729a"></script>
+<script src="js/imoveis/captacao.js?v=20260802a"></script>
+<script src="js/imoveis/gestao.js?v=20260706c"></script>
+<script src="js/imoveis/leads.js?v=20260725a"></script>
+<script src="js/imoveis/acm.js?v=20260802a"></script>
+<script src="js/imoveis/acm-export.js?v=20260802a"></script>
+<script>
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+init().catch(e => {
+  document.getElementById('pipeline').innerHTML =
+    '<div class="empty-state"><div class="es-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><p>Falha ao conectar: ' + e.message + '</p></div>';
+});
+
+</script>
+</div><!-- /sb-main -->
+</body>
+</html>
