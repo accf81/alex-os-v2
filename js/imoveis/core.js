@@ -4,7 +4,7 @@
 // ── Galeria de fotos via pasta do Google Drive — compartilhada (Imóveis + Condomínios, redesign 10.4) ──
 // Chave de API do Google Cloud (Drive API v3), restrita por domínio/referrer — configurar quando criada.
 // Ver _docs/ARQUITETURA.md para o passo a passo de criação.
-const DRIVE_API_KEY = 'AIzaSyBsoIHa19CdOQge3c9pCjpVjyusaXS_HE0';
+const DRIVE_API_KEY = 'AIzaSyAnvrgeR46nq74K0rTiQGc0nNHnI9USuJg';
 function extrairDriveFolderId(url) {
   const m = (url || '').match(/folders\/([a-zA-Z0-9_-]+)/) || (url || '').match(/[?&]id=([a-zA-Z0-9_-]+)/);
   return m ? m[1] : null;
